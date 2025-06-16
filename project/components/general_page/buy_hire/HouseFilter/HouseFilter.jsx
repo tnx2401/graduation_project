@@ -16,7 +16,6 @@ import AddressPanel from "./childComponents/AddressPanel";
 import PricePanel from "./childComponents/PricePanel";
 import AreaPanel from "./childComponents/AreaPanel";
 import Cookies from "js-cookie";
-import { set } from "lodash";
 
 const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
   const {
@@ -67,9 +66,11 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
 
   //* Áp dụng bộ lọc
   const handleApplyFilter = () => {
+    console.log("Search query address: ", searchQuery.address);
     let basePath = pathFunction.getBasePath(path);
     const queryAddress = searchQuery.address[0];
-    const zustandAddress = storedAddress[0];
+    const zustandAddress = storedAddress[0] ?? {};
+    const province = queryAddress.province || g_province;
 
     if (searchQuery.type && searchQuery.type.length > 0) {
       if (
@@ -89,21 +90,22 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
       basePath += `-${pathFunction.convertToSlug(queryAddress.project)}`;
     } else if (queryAddress.street && queryAddress.street !== "") {
       basePath += `-${pathFunction.convertToSlug(queryAddress.street)}`;
-      g_setStreet(zustandAddress.street.name);
+      g_setStreet(zustandAddress?.street?.name || queryAddress.street);
     } else if (queryAddress.ward && queryAddress.ward !== "") {
       basePath += `-${pathFunction.convertToSlug(queryAddress.ward)}`;
-      g_setWard(zustandAddress.ward.name);
-      g_setDistrict(zustandAddress.district);
+      g_setWard(zustandAddress?.ward?.name || queryAddress.ward);
+      g_setDistrict(zustandAddress?.district || queryAddress.district);
     } else if (queryAddress.district && queryAddress.district !== "") {
       basePath += `-${pathFunction.convertToSlug(queryAddress.district)}`;
-      if (zustandAddress?.district) g_setDistrict(zustandAddress.district);
-    } else if (g_province !== "") {
-      basePath += `-${pathFunction.convertToSlug(g_province)}`;
+      g_setDistrict(zustandAddress?.district || queryAddress.district);
+    } else if (province && province !== "") {
+      basePath += `-${pathFunction.convertToSlug(province)}`;
     }
 
     g_setSearchQuery(searchQuery);
     Cookies.set("searchQuery", JSON.stringify(searchQuery), { expires: 1 });
     router.push(basePath);
+    setIsFiltering(false);
   };
 
   return (
@@ -329,7 +331,7 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
                     <li
                       key={index}
                       className={`p-1 rounded-full px-3 cursor-pointer border ${
-                        searchQuery.houseDirection.includes(item)
+                        searchQuery.houseDirection?.includes(item)
                           ? "bg-black text-white"
                           : "bg-white text-black"
                       }`}
@@ -355,7 +357,7 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
                     <li
                       key={index}
                       className={`p-1 rounded-full px-3 cursor-pointer border ${
-                        searchQuery.balconyDirection.includes(item)
+                        searchQuery.balconyDirection?.includes(item)
                           ? "bg-black text-white"
                           : "bg-white text-black"
                       }`}

@@ -4,14 +4,17 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   MapIcon,
+  MapPinIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React, { useState, useEffect, useTransition, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import HouseFilter from "./HouseFilter/HouseFilter";
 import useStore from "@/lib/zustand";
 import pathFunction from "../shared/pathFunction";
 import Loading from "@/app/(trang-chu)/loading";
 import Cookies from "js-cookie";
+import HouseFilter from "./HouseFilter/HouseFilter";
+import getLocation from "../home_page/SearchBox/getLocation";
 
 const HouseSearchBox = () => {
   const path = usePathname();
@@ -31,9 +34,29 @@ const HouseSearchBox = () => {
     houseDirection: [],
     balconyDirection: [],
   });
+  const [searchValue, setSearchValue] = useState("");
+  const [searchBoxValue, setSearchBoxValue] = useState({
+    demand: "Bán",
+    location: "",
+    address: null,
+    houseType: [],
+    priceRange: "",
+    areaRange: "",
+  });
+  const [searchResult, setSearchResult] = useState([]);
 
-  const { g_street, g_ward, g_district, g_province, g_searchQuery } =
-    useStore();
+  const {
+    g_street,
+    g_ward,
+    g_district,
+    g_province,
+    g_searchQuery,
+    g_setSearchQuery,
+    g_setProvince,
+    g_setDistrict,
+    g_setWard,
+    g_setStreet,
+  } = useStore();
 
   const navItems = useMemo(
     () => [
@@ -136,9 +159,9 @@ const HouseSearchBox = () => {
       }).length;
   };
 
+  //* Đọc path để set filter
   useEffect(() => {
-    //* Đọc path để set filter
-    console.log(path);
+    console.log(g_searchQuery);
     setSearchQuery((prev) => {
       const updatedQuery = {
         ...g_searchQuery,
@@ -155,7 +178,7 @@ const HouseSearchBox = () => {
                   .map((child) => child.name)
               : []
           )
-          .filter(Boolean), // Removes `null` and `undefined`
+          .filter(Boolean),
       };
 
       Cookies.set("searchQuery", JSON.stringify(updatedQuery), { expires: 1 });
@@ -186,19 +209,182 @@ const HouseSearchBox = () => {
     }
   }, [router, g_district, g_ward, g_street, g_province]);
 
+  useEffect(() => {
+    if (searchValue) {
+      const searchResult = getLocation(searchValue);
+      setSearchResult(searchResult);
+    }
+  }, [searchValue]);
+
+  const handleSearch = () => {
+    g_setSearchQuery({
+      demand: searchBoxValue.demand === "Bán" ? "Tìm mua" : "Tìm thuê",
+      type: searchBoxValue.houseType,
+      address: searchBoxValue.address
+        ? [(({ province, ...rest }) => rest)(searchBoxValue.address)]
+        : [{ province: searchBoxValue.location }],
+      price: searchBoxValue.priceRange,
+      area: searchBoxValue.areaRange,
+      bedroom: "",
+      houseDirection: [],
+      balconyDirection: [],
+    });
+
+    g_setProvince(
+      searchBoxValue.address
+        ? searchBoxValue.address?.province
+        : searchBoxValue.location
+    );
+
+    if (searchBoxValue.address?.district) {
+      g_setDistrict(
+        isNaN(searchBoxValue.address.district.split(" ").splice(1).join(""))
+          ? searchBoxValue.address.district.split(" ").splice(1).join(" ")
+          : searchBoxValue.address.district
+      );
+    }
+    if (searchBoxValue.address?.ward) {
+      g_setWard(searchBoxValue.address.ward.split(" ").splice(1).join(" "));
+    }
+    if (searchBoxValue.address?.street) {
+      g_setStreet(searchBoxValue.address.street.split(" ").splice(1).join(" "));
+    }
+
+    const updatedQuery = {
+      demand:
+        searchBoxValue.demand === "Bán"
+          ? "Tìm mua"
+          : searchBoxValue.demand === "Thuê"
+          ? "Tìm thuê"
+          : "Dự án",
+      address: searchBoxValue.address
+        ? [{ ...searchBoxValue.address }]
+        : [{ province: searchBoxValue.location }],
+      type: searchBoxValue.houseType ? searchBoxValue.houseType : [],
+      price: searchBoxValue.priceRange,
+      area: searchBoxValue.areaRange,
+    };
+
+    Cookies.set("searchQuery", JSON.stringify(updatedQuery), {
+      expires: 1,
+    });
+
+    const addressSlug = searchBoxValue.address
+      ? pathFunction.convertToSlug(
+          searchBoxValue.address.street ||
+            searchBoxValue.address.ward ||
+            searchBoxValue.address.district ||
+            searchBoxValue.address.province ||
+            searchBoxValue.location
+        )
+      : pathFunction.convertToSlug(searchBoxValue.location);
+
+    if (searchBoxValue.houseType.length > 0) {
+      const houseTypeSlug = searchBoxValue.houseType
+        .map((type) => {
+          const navItem = navItems.find((item) => item.name === currentTab);
+          const childItem = navItem?.child.find((child) => child.name === type);
+          return childItem?.childLink || "";
+        })
+        .filter((slug) => slug !== "");
+
+      router.push(`${houseTypeSlug[0]}-${addressSlug}`);
+    } else {
+      router.push(
+        searchBoxValue.demand === "Bán"
+          ? `/nha-dat-ban-${addressSlug}`
+          : `/nha-dat-cho-thue-${addressSlug}`
+      );
+    }
+  };
+
   if (isLoading || isPending) {
     return <Loading />;
   }
 
   return (
-    <div className="border-b pb-5 pt-7">
-      <div className="flex items-center justify-between gap-3">
+    <div className="border-b pb-5 pt-7" onClick={() => setSearchResult([])}>
+      <div
+        className="flex items-center justify-between gap-3"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="relative flex-grow">
           <MagnifyingGlassIcon className="w-6 h-6 absolute left-2  top-1/2 -translate-y-1/2" />
-          <input className="w-full rounded-lg p-2 py-3 bg-neutral-100 border-neutral-400 pl-10" />
-          <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 px-3 bg-red-500 text-white rounded-lg">
+          {searchBoxValue.address &&
+            Object.keys(searchBoxValue.address).length > 0 && (
+              <>
+                <button
+                  className="absolute top-1/2 right-28 rounded-full bg-black text-white p-1 transform -translate-y-1/2 cursor-pointer hover:scale-110"
+                  onClick={() => {
+                    setSearchBoxValue((prev) => ({ ...prev, address: {} }));
+                    setSearchValue("");
+                  }}
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+
+                <div className="absolute top-1/2 left-8 border px-2 py-1 rounded-lg bg-white transform -translate-y-1/2 text-sm">
+                  {Object.values(searchBoxValue.address).join(", ")}
+                </div>
+              </>
+            )}
+          <input
+            className="w-full rounded-lg p-2 py-3 bg-neutral-100 border-neutral-400 pl-10"
+            onChange={(e) => setSearchValue(e.target.value)}
+          />
+          <button
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 px-3 bg-red-500 text-white rounded-lg"
+            onClick={handleSearch}
+          >
             Tìm kiếm
           </button>
+          {searchResult.length > 0 && (
+            <div>
+              {searchResult.length > 0 && (
+                <ul className="absolute z-50 bg-white shadow-md rounded-md w-full max-h-60 overflow-y-auto mt-1">
+                  {searchResult.map((item, index) => (
+                    <li
+                      key={index}
+                      className="p-2 text-left hover:bg-slate-200 rounded-lg text-sm flex items-center gap-2 cursor-pointer"
+                      onClick={() => {
+                        setSearchBoxValue((prev) => ({
+                          ...prev,
+                          address: {
+                            ...(item.type === "ward" || item.type === "street"
+                              ? {
+                                  [item.type === "ward"
+                                    ? "ward"
+                                    : "street"]: `${item.prefix} ${item.name}`,
+                                }
+                              : {}),
+                            district: item.district
+                              ? `${
+                                  item.district.includes("Huyện") ||
+                                  item.district.includes("Quận")
+                                    ? ""
+                                    : "Quận"
+                                } ${item.district}`.trim()
+                              : `${
+                                  item.name.includes("Huyện") ||
+                                  item.name.includes("Quận")
+                                    ? ""
+                                    : "Quận"
+                                } ${item.name}`.trim(),
+                            province: item.province || undefined,
+                          },
+                        }));
+                      }}
+                    >
+                      <MapPinIcon className="w-5 h-5" />
+                      {item.prefix} {item.name}
+                      {item.district && `, ${item.district}`}
+                      {item.province && `, ${item.province}`}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
         <button className="p-3 px-4 text-white bg-teal-600 rounded-lg flex gap-2">
           <MapIcon className="w-6 h-6" />

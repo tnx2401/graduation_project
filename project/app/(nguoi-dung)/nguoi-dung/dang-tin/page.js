@@ -6,18 +6,20 @@ import { EyeIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/solid"
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
+import dynamic from "next/dynamic";
 
-import Demand from "@/components/general_page/create_post_page/step_1/Demand";
-import Location from "@/components/general_page/create_post_page/step_1/Location";
-import MainInfo from "@/components/general_page/create_post_page/step_1/MainInfo";
-import OtherInfo from "@/components/general_page/create_post_page/step_1/OtherInfo";
-import Contact from "@/components/general_page/create_post_page/step_1/Contact";
-import Description from "@/components/general_page/create_post_page/step_1/Description";
-import AssignPhonenumber from "@/components/general_page/create_post_page/step_1/AssignPhonenumber";
-import ImageAndVideo from "@/components/general_page/create_post_page/step_2/ImageAndVideo";
-import Payment from "@/components/general_page/create_post_page/step_3/Payment";
-import PaymentInfo from "@/components/general_page/create_post_page/PaymentInfo";
-import Loading from "../loading";
+const Demand = dynamic(() => import("@/components/general_page/create_post_page/step_1/Demand"), { ssr: false });
+const Location = dynamic(() => import("@/components/general_page/create_post_page/step_1/Location"), { ssr: false });
+const MainInfo = dynamic(() => import("@/components/general_page/create_post_page/step_1/MainInfo"), { ssr: false });
+const OtherInfo = dynamic(() => import("@/components/general_page/create_post_page/step_1/OtherInfo"), { ssr: false });
+const Contact = dynamic(() => import("@/components/general_page/create_post_page/step_1/Contact"), { ssr: false });
+const Description = dynamic(() => import("@/components/general_page/create_post_page/step_1/Description"), { ssr: false });
+const AssignPhonenumber = dynamic(() => import("@/components/general_page/create_post_page/step_1/AssignPhonenumber"), { ssr: false });
+const ImageAndVideo = dynamic(() => import("@/components/general_page/create_post_page/step_2/ImageAndVideo"), { ssr: false });
+const Payment = dynamic(() => import("@/components/general_page/create_post_page/step_3/Payment"), { ssr: false });
+const PaymentInfo = dynamic(() => import("@/components/general_page/create_post_page/PaymentInfo"), { ssr: false });
+const Loading = dynamic(() => import("../loading"), { ssr: false });
+
 import pathFunction from "@/components/general_page/shared/pathFunction";
 
 const Page = () => {
@@ -115,6 +117,7 @@ const Page = () => {
       moneyperday: "",
       total: "",
     },
+    discount: null,
   });
 
   const getStep = (step) => {
@@ -144,11 +147,13 @@ const Page = () => {
         setAreaError("");
       }
 
-      if (formData.main_info.price.trim() === "") {
-        setPriceError("Chưa nhập giá tiền");
-        hasError = true;
-      } else {
-        setPriceError("");
+      if (formData.main_info.unit !== "agreement") {
+        if (formData.main_info.price.trim() === "") {
+          setPriceError("Chưa nhập giá tiền");
+          hasError = true;
+        } else {
+          setPriceError("");
+        }
       }
 
       if (formData.description.title.length < 30) {
@@ -219,6 +224,9 @@ const Page = () => {
   if (isLoading) {
     return <Loading />;
   }
+
+  console.log(formData);
+
   return (
     <div className="relative">
       <div className="flex justify-between items-center p-3 px-5">
@@ -320,7 +328,7 @@ const Page = () => {
       )}
 
       <div
-        className={`fixed bottom-0 left-1/2 -translate-x-1/2 bg-neutral-50 border-t w-[768px] ${step >= 2 ? "flex items-center justify-between" : ""
+        className={`fixed bottom-0 left-1/2 -translate-x-1/2 ml-12 bg-neutral-50 border-t w-[768px] ${step >= 2 ? "flex items-center justify-between" : ""
           } px-4`}
       >
         {step >= 2 && (
@@ -367,9 +375,9 @@ const Page = () => {
         <div className="fixed inset-0 top-0 left-0 w-screen h-screen bg-white z-50 flex items-center justify-center">
           {submitStatus === "Đăng bài thành công" && <div className="flex flex-col items-center justify-center">
             <CheckCircleIcon className="w-32 h-32 text-green-500" />
-            <h1 className="text-xl mt-5">Đăng bài thành công</h1>
+            <h1 className="text-xl mt-5">Tạo tin đăng thành công, quản trị viên sẽ duyệt tin của bạn trong vòng 24h</h1>
             <div className="flex mt-10 gap-10">
-              {[{ name: "Về trang chủ", href: "/" }, { name: "Tới trang tin đăng", href: `/${pathFunction.convertToSlug(formData.demand)}-${pathFunction.convertToSlug(formData.main_info.type)}` }, { name: "Đăng tin mới", href: `/nguoi-dung/dang-tin` }].map((item, index) => (
+              {[{ name: "Về trang chủ", href: "/" }, { name: "Tới trang quản lý tin đăng", href: `/nguoi-dung/quan-ly-tin-dang` }, { name: "Đăng tin mới", href: `/nguoi-dung/dang-tin` }].map((item, index) => (
                 <Link key={index} href={item.href} className="p-3 px-7 border rounded-xl hover:text-black hover:shadow-md text-neutral-400">{item.name}</Link>
               ))}
             </div>

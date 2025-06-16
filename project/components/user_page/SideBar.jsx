@@ -1,11 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChartPieIcon } from "@heroicons/react/24/solid";
 import {
+  ChartPieIcon,
   ClipboardDocumentCheckIcon,
   PlusCircleIcon,
-  UsersIcon,
   UserGroupIcon,
   UserCircleIcon,
   SunIcon,
@@ -13,14 +12,19 @@ import {
   MoonIcon,
   ChevronRightIcon,
   ArrowRightStartOnRectangleIcon,
+  ChatBubbleBottomCenterTextIcon,
+  BuildingOffice2Icon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import Image from "next/image";
 import { jwtDecode } from "jwt-decode";
 import Loading from "@/app/(trang-chu)/loading";
 import useStore from "@/lib/zustand";
+import { usePathname } from "next/navigation";
+import axios from "axios";
 
 const SideBar = () => {
+  const path = usePathname();
   const router = useRouter();
   const { setUid } = useStore();
   const [userInfo, setUserInfo] = useState();
@@ -31,9 +35,16 @@ const SideBar = () => {
     const token = localStorage.getItem("authToken");
     if (token) {
       const decoded = jwtDecode(token);
-      setUserInfo(decoded);
-      setUid(decoded.user_id);
-      setIsLoading(false);
+      axios
+        .get(`/api/users?userId=${decoded.user_id}`)
+        .then((res) => {
+          setUserInfo(res.data);
+          setUid(decoded.user_id);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     } else {
       router.push("/");
     }
@@ -52,20 +63,29 @@ const SideBar = () => {
     },
     {
       name: "Đăng tin",
-      href: "nguoi-dung/dang-tin",
+      href: "/nguoi-dung/dang-tin",
       icon: <PlusCircleIcon className="w-6 h-6" />,
     },
     {
-      name: "Khách hàng",
-      href: "nguoi-dung/quan-ly-khach-hang",
-      icon: <UsersIcon className="w-6 h-6" />,
+      name: "Tin nhắn",
+      href: "/nguoi-dung/tin-nhan",
+      icon: <ChatBubbleBottomCenterTextIcon className="w-6 h-6" />,
     },
     {
-      name: "Gói hội viên",
-      href: "nguoi-dung/hoi-vien",
+      name: "Hội viên",
+      href: "/nguoi-dung/hoi-vien",
       icon: <UserGroupIcon className="w-6 h-6" />,
     },
-    { name: "Tài Khoản", icon: <UserCircleIcon className="w-6 h-6" /> },
+    {
+      name: "Tài Khoản",
+      href: "/nguoi-dung/thong-tin-tai-khoan",
+      icon: <UserCircleIcon className="w-6 h-6" />,
+    },
+    {
+      name: "D.Nghiệp",
+      href: "/nguoi-dung/doanh-nghiep",
+      icon: <BuildingOffice2Icon className="w-6 h-6" />,
+    },
   ];
 
   const getGreet = () => {
@@ -98,7 +118,7 @@ const SideBar = () => {
   }
 
   return (
-    <div className="fixed z-50 top-0 left-0 px-3 pt-5 shadow-2xl h-screen flex flex-col items-center gap-5">
+    <div className="fixed z-1 top-0 left-0 px-3 pt-5 shadow-2xl h-screen flex flex-col items-center gap-5">
       <Link href={"/"}>
         <svg
           width="50"
@@ -186,28 +206,25 @@ const SideBar = () => {
       </Link>
 
       <div className="flex flex-col gap-10 mt-10 flex-grow">
-        {navItems.map((item, index) =>
-          item.href ? (
-            <Link
-              href={item.href}
-              key={index}
-              className="flex flex-col items-center gap-2"
-            >
-              {item.icon}
-              <h1 className="text-xs">{item.name}</h1>
-            </Link>
-          ) : (
-            <div key={index} className="flex flex-col items-center">
-              {item.icon}
-              <h1 className="text-xs">{item.name}</h1>
-            </div>
-          )
-        )}
+        {navItems.map((item, index) => (
+          <Link
+            href={item.href}
+            key={index}
+            className={`flex flex-col items-center gap-2 ${
+              path === item.href
+                ? "scale-100 border bg-red-500 text-white py-1 rounded-lg"
+                : "scale-100"
+            }`}
+          >
+            {item.icon}
+            <h1 className="text-xs">{item.name}</h1>
+          </Link>
+        ))}
       </div>
 
       <div className="pb-5 relative">
         <Image
-          src={userInfo.picture}
+          src={userInfo?.profile_picture}
           width={50}
           height={50}
           className="rounded-full cursor-pointer"
@@ -218,7 +235,7 @@ const SideBar = () => {
           <div className="absolute -top-28 left-24 w-[26rem] bg-white shadow-xl border rounded-lg">
             <div className="flex p-5 gap-5 border-b items-center">
               <Image
-                src={userInfo.picture}
+                src={userInfo?.profile_picture}
                 width={70}
                 height={70}
                 className="rounded-full cursor-pointer"
@@ -227,7 +244,7 @@ const SideBar = () => {
               <div className="flex flex-col flex-grow">
                 {getGreet()}
                 <h1 className="text-xl truncate max-w-[200px] overflow-hidden whitespace-nowrap">
-                  {userInfo.name}
+                  {userInfo.username}
                 </h1>
               </div>
               <ChevronRightIcon className="w-6 h-6" />

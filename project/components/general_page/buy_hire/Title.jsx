@@ -18,6 +18,7 @@ const Title = ({ amount }) => {
     g_setDistrict,
     g_setWard,
     g_setStreet,
+    g_setSearchQuery,
   } = useStore();
 
   const [title, setTitle] = useState("");
@@ -108,8 +109,6 @@ const Title = ({ amount }) => {
     let newLink = [];
     let basePath = pathFunction.getBasePath(path);
 
-    console.log(basePath);
-
     if (path.includes("ban")) {
       newLink.push({
         name: "Bán",
@@ -155,7 +154,11 @@ const Title = ({ amount }) => {
         lookingFor === "phuong" ||
         lookingFor === "xa"
       ) {
-        locationDescription = `tại ${location.prefix} ${location.name}, Quận ${g_district}`;
+        locationDescription = `tại ${location.prefix} ${location.name}, ${
+          isNaN(g_district.split(" ").splice(1).join(" "))
+            ? "Quận " + g_district
+            : g_district
+        }, ${g_province}`;
         pathDescription = `-${pathFunction.convertToSlug(
           location.prefix
         )}-${pathFunction.convertToSlug(location.name)}`;
@@ -212,7 +215,22 @@ const Title = ({ amount }) => {
             className="text-sm"
             onClick={() => handleResetPath(item.name)}
           >
-            <Link href={item.path} className={`${item.style}`}>
+            <Link
+              href={item.path}
+              className={`${item.style}`}
+              onClick={() => {
+                g_setSearchQuery({
+                  demand: "Tìm mua",
+                  type: [],
+                  address: [],
+                  price: "",
+                  area: "",
+                  bedroom: "",
+                  houseDirection: [],
+                  balconyDirection: [],
+                });
+              }}
+            >
               {item.name}
             </Link>
             {index < link.length - 1 ? <span className="ml-1">/</span> : null}

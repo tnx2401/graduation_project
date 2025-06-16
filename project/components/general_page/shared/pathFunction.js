@@ -12,6 +12,9 @@ const getBasePath = (path) => {
     return basePath;
 }
 const convertToSlug = (text) => {
+    if (!text) {
+        return "";
+    }
     return text
         .toLowerCase()
         .normalize("NFD") // Normalize Vietnamese characters

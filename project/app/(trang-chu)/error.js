@@ -1,6 +1,7 @@
 "use client"; // Error boundaries must be Client Components
 
 import { useEffect } from "react";
+import Link from "next/link";
 
 export default function Error({ error, reset }) {
   useEffect(() => {
@@ -8,9 +9,9 @@ export default function Error({ error, reset }) {
   }, [error]);
 
   return (
-    <div>
-      <h2>Something went wrong!</h2>
-      <button onClick={() => reset()}>Try again</button>
+    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-center">
+      <h2>Có lỗi xảy ra {':('}</h2>
+      <Link href={'/'}>Quay lại trang chủ</Link>
     </div>
   );
 }

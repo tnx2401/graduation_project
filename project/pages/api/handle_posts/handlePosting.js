@@ -37,7 +37,6 @@ export default async function handler(req, res) {
       }
     }
 
-
     const sqlQuery = "SELECT * FROM users WHERE uid = $1";
     const result = await db.query(sqlQuery, [userId]);
 
@@ -113,10 +112,9 @@ export default async function handler(req, res) {
       );
 
 
-      const invoiceQuery = 'INSERT INTO public.invoices(user_id, post_id, amount, payment_status, created_at, post_start_date, post_duration, verify_status, post_status)' +
-        ' VALUES ($1, $2, $3, $4, $5, $6, $7)'
-      const post_status = (startDate > currentTime ? "Chờ hiển thị" : "Đang hiển thị")
-      const invoiceValues = [userId, postId, data.payment.total, "Paid", currentTime, data.payment.startDate, data.payment.duration, "Chờ duyệt", post_status];
+      const invoiceQuery = 'INSERT INTO public.invoices(user_id, post_id, amount, payment_status, created_at, post_start_date, post_duration, verify_status)' +
+        ' VALUES ($1, $2, $3, $4, $5, $6, $7, $8)'
+      const invoiceValues = [userId, postId, data.payment.total, "Paid", currentTime, data.payment.startDate, data.payment.duration, "Chờ duyệt"];
 
 
       await db.query(invoiceQuery, invoiceValues)
@@ -129,6 +127,14 @@ export default async function handler(req, res) {
       ];
 
       await db.query(subtractBalanceQuery, subtractBalanceValues);
+
+      const subtractMembershipBenefitQuery = `
+        UPDATE membership_benefit_usage
+        SET remaining_quantity = remaining_quantity - 1
+        WHERE user_id = $1 AND benefit_type = $2
+      `;
+      const subtractMembershipBenefitValues = [userId, data.discount];
+      await db.query(subtractMembershipBenefitQuery, subtractMembershipBenefitValues);
 
       res.status(200).json({ message: "Đăng bài thành công" });
     }

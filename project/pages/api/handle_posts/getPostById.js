@@ -16,6 +16,9 @@ export default async function handler(req, res) {
         posts.*,
         users.profile_picture,
         users.uid,
+        invoices.post_start_date,
+        invoices.post_end_date,
+        post_ranks.name as rank_name,
         COALESCE(
           (
             SELECT json_agg(images_url ORDER BY id)
@@ -29,8 +32,10 @@ export default async function handler(req, res) {
         ) AS images
       FROM public.posts 
       LEFT JOIN public.users ON posts.phone_number = users.phone_number
+      LEFT JOIN invoices ON invoices.post_id = posts.id
+      JOIN post_ranks ON posts.rank_id = post_ranks.id
       WHERE posts.id = $1
-      GROUP BY posts.id, users.profile_picture, users.uid;
+      GROUP BY posts.id, users.profile_picture, users.uid, invoices.id, post_ranks.id;
     `;
 
     const values = [parseInt(id)]; // Convert ID to number

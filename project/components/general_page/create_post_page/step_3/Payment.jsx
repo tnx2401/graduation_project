@@ -2,6 +2,12 @@ import React, { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";
+import {
+  ChevronRightIcon,
+  SparklesIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import useStore from "@/lib/zustand";
 
 const timeSlots = [
   "00:00 ➝ 00:30",
@@ -60,7 +66,13 @@ const Payment = ({ formData, setFormData }) => {
   const [selectedOption, setSelectedOption] = useState({});
   const [startDate, setStartDate] = useState(new Date());
   const [postTime, setPostTime] = useState("Đăng ngay bây giờ");
+  const [isSelectDiscount, setIsSelectDiscount] = useState(false);
+  const [discountInfo, setDiscountInfo] = useState([]);
+  const [selectedDiscount, setSelectedDiscount] = useState("");
+  const [discountMessage, setDiscountMessage] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const { uid } = useStore();
 
   const handleEndDate = () => {
     const endDate = new Date(startDate);
@@ -91,6 +103,19 @@ const Payment = ({ formData, setFormData }) => {
     axios(`/api/handle_posts/getPostRanks`)
       .then((res) => {
         setPostRank(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+        setLoading(false);
+      });
+
+    axios
+      .post(`/api/users/getUserInformation`, {
+        uid: uid,
+      })
+      .then((res) => {
+        console.log(res.data);
+        setDiscountInfo(res.data);
         setLoading(false);
       })
       .catch((err) => {
@@ -115,10 +140,68 @@ const Payment = ({ formData, setFormData }) => {
     }
   }, [selectedRank]);
 
+  const handleSelectDiscount = () => {
+    setIsSelectDiscount(!isSelectDiscount);
+  };
+
+  const rankOrder = [
+    "freeGoldPosts",
+    "freeSilverPosts",
+    "freeNormalPosts",
+    "freePushPosts",
+  ];
+
+  const sortedBenefits = discountInfo[0]?.benefit_usage
+    ?.slice()
+    .sort(
+      (a, b) =>
+        rankOrder.indexOf(a.benefit_type) - rankOrder.indexOf(b.benefit_type)
+    );
+
+  const getPostRankName = (postRankName) => {
+    if (postRankName === "freeGoldPosts") {
+      return "Miễn phí tin hạng VIP Vàng";
+    } else if (postRankName === "freeSilverPosts") {
+      return "Miễn phí tin hạng VIP Bạc";
+    } else if (postRankName === "freeNormalPosts") {
+      return "Miễn phí tin thường";
+    } else {
+      return;
+    }
+  };
+
+  const handleApplyDiscount = () => {
+    let requireDuration;
+    const discountRankName = getPostRankName(selectedDiscount);
+
+    if (selectedDiscount === "freeNormalPosts") {
+      requireDuration = 10;
+    } else {
+      requireDuration = 7;
+    }
+
+    if (
+      discountRankName
+        .toLowerCase()
+        .includes(selectedRank.name.toLowerCase()) &&
+      selectedOption.days === requireDuration
+    ) {
+      setIsSelectDiscount(false);
+      setFormData({
+        ...formData,
+        payment: {
+          ...formData.payment,
+          total: 0,
+        },
+        discount: selectedDiscount,
+      });
+    } else {
+      setDiscountMessage(`Không thỏa mãn điều kiện áp dụng khuyến mãi`);
+    }
+  };
   if (loading) {
     return <p>Loading...</p>;
   }
-
 
   return (
     <div className="w-full">
@@ -203,6 +286,129 @@ const Payment = ({ formData, setFormData }) => {
           </select>
         </div>
       </div>
+
+      <div
+        className="mt-5 flex border rounded-xl p-3 bg-gray-50 cursor-pointer"
+        onClick={handleSelectDiscount}
+      >
+        <h1 className="flex items-center gap-3">
+          <SparklesIcon className="w-5 h-5" />
+          {formData.discount ? (
+            <div className="flex items-center gap-1">
+              {getPostRankName(selectedDiscount)}
+              <span className="text-xs text-gray-400">(Đã áp dụng)</span>
+            </div>
+          ) : (
+            "Chọn khuyến mãi"
+          )}
+        </h1>
+        <ChevronRightIcon className="w-5 h-5 ml-auto" />
+      </div>
+
+      {isSelectDiscount && (
+        <div className="absolute top-0 left-0 bg-black/50 w-full h-screen z-50">
+          <div className="flex flex-col absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-1/2 shadow bg-white rounded-xl">
+            <div className="flex items-center justify-between gap-52 mb-6  p-5 border-b shadow-sm">
+              <h1 className="font-semibold">Chọn khuyến mãi</h1>
+              <button
+                onClick={() => {
+                  setIsSelectDiscount(false);
+                  setDiscountMessage("");
+                }}
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            {!sortedBenefits && (
+              <div className="flex flex-col items-center h-full">
+                <p className="text-gray-500">Không có khuyến mãi nào...</p>
+              </div>
+            )}
+            {sortedBenefits
+              ?.filter(
+                (item) =>
+                  [
+                    "freeGoldPosts",
+                    "freeSilverPosts",
+                    "freeNormalPosts",
+                  ].includes(item.benefit_type) && item.remaining_quantity > 0
+              )
+              .map((item, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between rounded-xl p-3 mx-5 my-2 cursor-pointer hover:bg-gray-100 ${
+                    item.benefit_type === selectedDiscount
+                      ? "border-black border bg-gray-100"
+                      : "border border-gray-300"
+                  }`}
+                  onClick={() => {
+                    setSelectedDiscount(item.benefit_type);
+                    setDiscountMessage("");
+                  }}
+                >
+                  <div>
+                    <h1 className="font-semibold">
+                      {getPostRankName(item.benefit_type)}
+                    </h1>
+                    <p className="text-xs">
+                      Áp dụng với tin đăng trong{" "}
+                      <span>
+                        {getPostRankName(item.benefit_type)
+                          .toLowerCase()
+                          .includes("tin thường")
+                          ? "7 ngày"
+                          : "10 ngày"}
+                      </span>
+                    </p>
+                  </div>
+                  <p className="">
+                    SL:{" "}
+                    <span className="font-semibold">
+                      {item.remaining_quantity}
+                    </span>
+                  </p>
+                </div>
+              ))}
+            {selectedDiscount && (
+              <div className="mt-auto flex flex-col">
+                <p className="px-5 text-red-500 text-xs text-center">
+                  {discountMessage}
+                </p>
+                <div className="ml-auto">
+                  {formData.discount && (
+                    <button>
+                      <p
+                        className="p-3 px-6 rounded-lg m-3 text-white bg-gray-300"
+                        onClick={() => {
+                          setSelectedDiscount("");
+                          setDiscountMessage("");
+                          setFormData({
+                            ...formData,
+                            payment: {
+                              ...formData.payment,
+                              total: selectedOption.total_price,
+                            },
+                            discount: null,
+                          });
+                          setIsSelectDiscount(false);
+                        }}
+                      >
+                        Hủy khuyến mãi
+                      </p>
+                    </button>
+                  )}
+                  <button
+                    className="p-3 px-6 rounded-lg m-3 text-white bg-red-500"
+                    onClick={handleApplyDiscount}
+                  >
+                    Áp dụng
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

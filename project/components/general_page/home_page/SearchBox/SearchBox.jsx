@@ -4,10 +4,14 @@ import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
   ArrowRightIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import optionsData from "./data";
 import useStore from "@/lib/zustand";
+import pathFunction from "../../shared/pathFunction";
+import Cookies from "js-cookie";
+import getLocation from "./getLocation";
 
 const SearchBox = () => {
   const router = useRouter();
@@ -16,14 +20,21 @@ const SearchBox = () => {
   const [isLocation, setIsLocation] = useState(false);
   const [currentTab, setCurrentTab] = useState("Nhà đất bán");
 
-  const { g_setProvince } = useStore();
+  const {
+    g_setProvince,
+    g_setDistrict,
+    g_setWard,
+    g_setStreet,
+    g_setSearchQuery,
+  } = useStore();
 
   const [searchQuery, setSearchQuery] = useState({
     demand: "",
     location: "",
+    address: null,
     houseType: [],
-    priceRange: [],
-    areaRange: [],
+    priceRange: "",
+    areaRange: "",
   });
 
   const options = useMemo(() => optionsData, []);
@@ -52,12 +63,12 @@ const SearchBox = () => {
     "Gia Lai",
     "Hà Giang",
     "Hà Nam",
-    "Hà Nội",
+    "Hà Nội",
     "Hà Tĩnh",
     "Hải Dương",
     "Hải Phòng",
     "Hậu Giang",
-    "TP. Hồ Chí Minh",
+    "Hồ Chí Minh",
     "Hòa Bình",
     "Hưng Yên",
     "Khánh Hòa",
@@ -94,10 +105,100 @@ const SearchBox = () => {
     "Yên Bái",
   ];
 
+  const navItems = useMemo(
+    () => [
+      {
+        name: "Nhà đất bán",
+        link: "nha-dat-ban",
+        parent: "ban-slug",
+        child: [
+          { name: "Căn hộ chung cư", childLink: "/ban-can-ho-chung-cu" },
+          {
+            name: "Chung cư mini, căn hộ dịch vụ",
+            childLink: "/ban-chung-cu-mini-can-ho-dich-vu",
+          },
+          { name: "Nhà riêng", childLink: "/ban-nha-rieng" },
+          {
+            name: "Nhà biệt thự, liền kề",
+            childLink: "/ban-nha-biet-thu-lien-ke",
+          },
+          { name: "Nhà mặt phố", childLink: "/ban-nha-mat-pho" },
+          {
+            name: "Shop house, nhà phố thương mại",
+            childLink: "/ban-shophouse-nha-pho-thuong-mai",
+          },
+          { name: "Đất nền dự án", childLink: "/ban-dat-nen-du-an" },
+          { name: "Bán đất", childLink: "/ban-dat" },
+          {
+            name: "Trang trại, khu nghỉ dưỡng",
+            childLink: "/ban-trang-trai-khu-nghi-duong",
+          },
+          { name: "Condotel", childLink: "/ban-condotel" },
+          { name: "Kho,nhà xưởng", childLink: "/ban-kho-nha-xuong" },
+          {
+            name: "Loại bất động sản khác",
+            childLink: "/ban-loai-bds-khac",
+          },
+        ],
+      },
+      {
+        name: "Nhà đất cho thuê",
+        link: "nha-dat-cho-thue",
+        child: [
+          {
+            name: "Căn hộ chung cư",
+            childLink: "/thue-can-ho-chung-cu",
+          },
+          {
+            name: "Chung cư mini, căn hộ dịch vụ",
+            childLink: "/thue-chung-cu-mini-can-ho-dich-vu",
+          },
+          {
+            name: "Nhà riêng",
+            childLink: "/thue-nha-rieng",
+          },
+          {
+            name: "Nhà biệt thự, liền kề",
+            childLink: "/thue-nha-biet-thu-lien-ke",
+          },
+          {
+            name: "Nhà mặt phố",
+            childLink: "/thue-nha-mat-pho",
+          },
+          {
+            name: "Shophouse, nhà phố thương mại",
+            childLink: "/thue-shophouse-nha-pho-thuong-mai",
+          },
+          {
+            name: "Nhà trọ, phòng trọ",
+            childLink: "/thue-nha-tro-phong-tro",
+          },
+          {
+            name: "Văn phòng",
+            childLink: "/thue-van-phong",
+          },
+          {
+            name: "Cửa hàng, ki ốt",
+            childLink: "/thue-sang-nhuong-cua-hang-ki-ot",
+          },
+          {
+            name: "Kho, nhà xưởng, đất",
+            childLink: "/thue-kho-nha-xuong-dat",
+          },
+          {
+            name: "Loại bất động sản khác",
+            childLink: "/thue-loai-bat-dong-san-khac",
+          },
+        ],
+      },
+    ],
+    []
+  );
+
   const [currentOption, setCurrentOption] = useState(null);
   const [checkedItems, setCheckedItems] = useState({});
-  const [price, setPrice] = useState([]);
-  const [area, setArea] = useState([]);
+  const [price, setPrice] = useState("");
+  const [area, setArea] = useState("");
   const [status, setStatus] = useState([]);
 
   const [priceRange, setPriceRange] = useState({
@@ -109,6 +210,9 @@ const SearchBox = () => {
     from: 0,
     to: 0,
   });
+
+  const [searchValue, setSearchValue] = useState("");
+  const [searchResult, setSearchResult] = useState([]);
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -136,9 +240,21 @@ const SearchBox = () => {
 
       if (data.results.length > 0) {
         const city = data.results[0].components._normalized_city;
-        setCurrentLocation(city);
-        // g_setProvince(city);
-        localStorage.setItem("currentLocation", city);
+        console.log(city);
+
+        // Normalize city name to match format in 'provinces'
+        const normalizedCity = provinces.find(
+          (item) => item.normalize("NFC") === city.normalize("NFC")
+        );
+
+        if (normalizedCity) {
+          setCurrentLocation(normalizedCity);
+          localStorage.setItem("currentLocation", normalizedCity);
+        } else {
+          // Handle the case when city is not found in provinces
+          console.log("City not found in provinces list");
+          setCurrentLocation("Chọn địa điểm");
+        }
       } else {
         setCurrentLocation("Chọn địa điểm");
       }
@@ -151,7 +267,6 @@ const SearchBox = () => {
     const storedLocation = localStorage.getItem("currentLocation");
     if (storedLocation) {
       setCurrentLocation(storedLocation);
-      // g_setProvince(storedLocation);
     } else {
       getCurrentLocation();
     }
@@ -187,6 +302,13 @@ const SearchBox = () => {
   useEffect(() => {
     setSearchQuery((prev) => ({ ...prev, areaRange: area }));
   }, [area]);
+
+  useEffect(() => {
+    if (searchValue) {
+      const searchResult = getLocation(searchValue);
+      setSearchResult(searchResult);
+    }
+  }, [searchValue]);
 
   const handleSelectOption = (name) => {
     if (currentOption === name) {
@@ -228,20 +350,6 @@ const SearchBox = () => {
     }
   };
 
-  const priceHandler = (price) => {
-    const matches = price.match(/\d+/g); // Matches one or more digits
-    if (matches) {
-      setPrice(matches.map(Number)); // Convert the strings to numbers
-    }
-  };
-
-  const areaHandler = (area) => {
-    const matches = area.match(/\d+/g); // Matches one or more digits
-    if (matches) {
-      setArea(matches.map(Number)); // Convert the strings to numbers
-    }
-  };
-
   const statusHandler = (stt) => {
     const tempArr = [...status];
     if (tempArr.includes(stt)) {
@@ -257,10 +365,8 @@ const SearchBox = () => {
       const isParentChecked = prev[name];
       const updatedItems = { ...prev };
 
-      // Update parent checkbox
       updatedItems[name] = !isParentChecked;
 
-      // Update all child checkboxes
       if (children) {
         children.forEach((child) => {
           updatedItems[child] = !isParentChecked;
@@ -312,11 +418,102 @@ const SearchBox = () => {
   };
 
   const handleSearch = () => {
-    router.push(`${searchQuery.demand === "Bán" ? "/ban" : "/thue"}`);
+    console.log(searchQuery);
+
+    g_setSearchQuery({
+      demand: searchQuery.demand === "Bán" ? "Tìm mua" : "Tìm thuê",
+      type: searchQuery.houseType,
+      address: searchQuery.address
+        ? [(({ province, ...rest }) => rest)(searchQuery.address)]
+        : [{ province: searchQuery.location }],
+      price: searchQuery.priceRange,
+      area: searchQuery.areaRange,
+      bedroom: "",
+      houseDirection: [],
+      balconyDirection: [],
+    });
+
+    g_setProvince(
+      searchQuery.address ? searchQuery.address?.province : searchQuery.location
+    );
+
+    if (searchQuery.address?.district) {
+      g_setDistrict(
+        isNaN(searchQuery.address.district.split(" ").splice(1).join(""))
+          ? searchQuery.address.district.split(" ").splice(1).join(" ")
+          : searchQuery.address.district
+      );
+    }
+    if (searchQuery.address?.ward) {
+      g_setWard(searchQuery.address.ward.split(" ").splice(1).join(" "));
+    }
+    if (searchQuery.address?.street) {
+      g_setStreet(searchQuery.address.street.split(" ").splice(1).join(" "));
+    }
+
+    const updatedQuery = {
+      demand:
+        searchQuery.demand === "Bán"
+          ? "Tìm mua"
+          : searchQuery.demand === "Thuê"
+          ? "Tìm thuê"
+          : "Dự án",
+      address: searchQuery.address
+        ? [{ ...searchQuery.address }]
+        : [{ province: searchQuery.location }],
+      type: searchQuery.houseType ? searchQuery.houseType : [],
+      price: searchQuery.priceRange,
+      area: searchQuery.areaRange,
+    };
+
+    Cookies.set("searchQuery", JSON.stringify(updatedQuery), {
+      expires: 1,
+    });
+
+    const addressSlug = searchQuery.address
+      ? pathFunction.convertToSlug(
+          searchQuery.address.street ||
+            searchQuery.address.ward ||
+            searchQuery.address.district ||
+            searchQuery.address.province ||
+            searchQuery.location
+        )
+      : pathFunction.convertToSlug(searchQuery.location);
+
+    if (searchQuery.houseType.length > 0) {
+      const houseTypeSlug = searchQuery.houseType
+        .map((type) => {
+          const navItem = navItems.find((item) => item.name === currentTab);
+          const childItem = navItem?.child.find((child) => child.name === type);
+          return childItem?.childLink || "";
+        })
+        .filter((slug) => slug !== "");
+
+      router.push(`${houseTypeSlug[0]}-${addressSlug}`);
+    } else {
+      router.push(
+        searchQuery.demand === "Bán"
+          ? `/nha-dat-ban-${addressSlug}`
+          : `/nha-dat-cho-thue-${addressSlug}`
+      );
+    }
+  };
+
+  const getTabName = (tabName) => {
+    if (tabName === "Loại nhà đất") {
+      return Array.isArray(searchQuery.houseType) &&
+        searchQuery.houseType.length > 0
+        ? searchQuery.houseType.join(", ")
+        : "Loại nhà đất";
+    } else if (tabName === "Mức giá") {
+      return searchQuery.priceRange ? searchQuery.priceRange : "Mức giá";
+    } else {
+      return searchQuery.areaRange ? searchQuery.areaRange : "Diện tích";
+    }
   };
 
   return (
-    <div className="absolute z-30 top-1/2 left-1/2 transform -translate-x-1/2 2xl:-translate-y-60 xl:-translate-y-40 w-1/2">
+    <div className="absolute z-30 xl:top-1/2 top-5 left-1/2 transform -translate-x-1/2 2xl:-translate-y-60 xl:-translate-y-40 w-10/12 md:w-1/2">
       <div className="">
         <ul className="flex gap-2">
           {tabs.map((item, index) => (
@@ -335,7 +532,11 @@ const SearchBox = () => {
 
       <div
         className="bg-black/50 flex flex-col"
-        onClick={() => setIsSearching(false)}
+        onClick={() => {
+          setIsSearching(false);
+          setIsLocation(false);
+          setSearchResult([]);
+        }}
       >
         <div
           className={`bg-white relative w-[97%] flex-row rounded-md my-5 mx-auto transition-all transform duration-300 ease-out ${
@@ -373,14 +574,34 @@ const SearchBox = () => {
 
             <div className="w-4/5 mx-2 my-1 flex relative">
               <MagnifyingGlassIcon className="w-5 h-5 absolute top-1/2 left-0 transform -translate-y-1/2" />
+              {searchQuery.address &&
+                Object.keys(searchQuery.address).length > 0 && (
+                  <>
+                    <button
+                      className="absolute top-1/2 right-28 rounded-full bg-black text-white p-1 transform -translate-y-1/2 cursor-pointer hover:scale-110"
+                      onClick={() => {
+                        setSearchQuery((prev) => ({ ...prev, address: {} }));
+                        setSearchValue("");
+                      }}
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+
+                    <div className="absolute top-1/2 left-8 border px-2 py-1 rounded-lg bg-white transform -translate-y-1/2 text-sm">
+                      {Object.values(searchQuery.address).join(", ")}
+                    </div>
+                  </>
+                )}
               <input
-                className="w-9/12 mx-2 flex-grow ml-8 outline-none border-none bg-inherit text-sm "
-                placeholder="Nhập tối đa 5 địa điểm, dự án. Ví dụ: Quận Hoàn Kiếm, Quận Đống Đa"
+                className="w-9/12 mx-2 flex-grow ml-8 outline-none border-none bg-inherit text-sm"
+                value={searchValue}
+                placeholder=" Tìm kiếm địa điểm (Ví dụ: Quận Hoàn Kiếm, Quận Đống Đa)"
                 onClick={(e) => {
                   setIsSearching(true);
                   setIsLocation(false);
                   e.stopPropagation();
                 }}
+                onChange={(e) => setSearchValue(e.target.value)}
               />
               <button
                 className=" bg-red-500 text-white my-1 mx-2 px-3 text-sm rounded-md hover:bg-red-500/90"
@@ -392,7 +613,7 @@ const SearchBox = () => {
           </div>
           {isSearching && (
             <div
-              className={`absolute bg-slate-50 w-full left-0 transform transition-all duration-300 ease-out ${
+              className={`absolute bg-slate-50 w-full left-0 transform transition-all duration-300 ease-out rounded-lg ${
                 isSearching
                   ? "translate-y-0 opacity-100"
                   : "-translate-y-5 opacity-0"
@@ -419,18 +640,55 @@ const SearchBox = () => {
                   </div>
                 </div>
               ) : (
-                <div className="p-5">
-                  <h1 className="text-sm text-gray-500">Tìm kiếm phổ biến</h1>
-                  <ul className="mt-2">
-                    <li className="flex items-center text-md  py-1">
-                      <MapPinIcon className="w-4 h-4 mr-2" /> Cầu giấy, Hà Nội
-                    </li>
-                    <li className="flex items-center text-md  py-1">
-                      <MapPinIcon className="w-4 h-4 mr-2" /> Đống Đa, Hà Nội
-                    </li>
-                    <li className="flex items-center text-md  py-1">
-                      <MapPinIcon className="w-4 h-4 mr-2" /> Ba đình, Hà Nội
-                    </li>
+                <div className="p-5 max-h-56 overflow-auto">
+                  <ul className="">
+                    <h1 className="pl-2 text-md">
+                      {searchResult.length > 0
+                        ? "Kết quả tìm kiếm"
+                        : "Chưa có kết quả tìm kiếm"}
+                    </h1>
+                    {searchResult.map((item, index) => (
+                      <li
+                        key={index}
+                        className="p-2 text-left hover:bg-slate-200 rounded-lg text-sm flex items-center gap-2 cursor-pointer"
+                        onClick={() => {
+                          setSearchQuery((prev) => ({
+                            ...prev,
+                            address: {
+                              ...(item.type === "ward" || item.type === "street"
+                                ? {
+                                    [item.type === "ward"
+                                      ? "ward"
+                                      : "street"]: `${item.prefix} ${item.name}`,
+                                  }
+                                : {}),
+                              district: item.district
+                                ? `${
+                                    item.district.includes("Huyện")
+                                      ? ""
+                                      : item.district.includes("Quận")
+                                      ? ""
+                                      : "Quận"
+                                  } ${item.district}`.trim()
+                                : `${
+                                    item.name.includes("Huyện")
+                                      ? ""
+                                      : item.name.includes("Quận")
+                                      ? ""
+                                      : "Quận"
+                                  } ${item.name}`.trim(),
+                              province: item.province || undefined, // Only add province if it's available
+                            },
+                          }));
+                          setIsLocation(false);
+                          setIsSearching(false);
+                        }}
+                      >
+                        <MapPinIcon className="w-5 h-5" /> {item.prefix}{" "}
+                        {item.name} {item.district && `, ${item.district}`}{" "}
+                        {item.province && `, ${item.province}`}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               )}
@@ -438,7 +696,7 @@ const SearchBox = () => {
           )}
         </div>
 
-        <div className="flex mx-4 gap-5 mb-5">
+        <div className="mx-4 gap-5 mb-5 md:flex hidden">
           {options.map((item, _) => {
             if (currentTab === item.optionFor) {
               return item.content.map((content, index) => (
@@ -451,7 +709,9 @@ const SearchBox = () => {
                     disabled={isSearching}
                     onClick={() => handleSelectOption(content.name)}
                   >
-                    <span className="flex-grow text-left">{content.name}</span>
+                    <span className="flex-grow text-left break-words line-clamp-1">
+                      {getTabName(content.name)}
+                    </span>
                     <span>
                       <ChevronDownIcon className="w-4 h-4" />
                     </span>
@@ -605,7 +865,7 @@ const SearchBox = () => {
                                   id={`priceOption-${index}`}
                                   value={contentItem}
                                   className="h-3 w-3 text-red-600 border-gray-300 rounded focus:ring-0"
-                                  onChange={() => priceHandler(contentItem)}
+                                  onChange={() => setPrice(contentItem)}
                                 />
                               ) : content.name === "Diện tích" ? (
                                 <input
@@ -614,13 +874,13 @@ const SearchBox = () => {
                                   id={`areaOptions-${index}`}
                                   value={contentItem}
                                   className="h-3 w-3 text-red-600 border-gray-300 rounded focus:ring-0"
-                                  onChange={() => areaHandler(contentItem)}
+                                  onChange={() => setArea(contentItem)}
                                 />
                               ) : (
                                 <input
                                   type="checkbox"
                                   className="form-checkbox h-3 w-3 text-red-600 border-gray-300 rounded focus:ring-0"
-                                  onChange={() => statusHandler(contentItem)}
+                                  onChange={() => setStatus(contentItem)}
                                 />
                               )}
                             </div>
@@ -657,15 +917,12 @@ const SearchBox = () => {
                         ))}
                       </div>
 
-                      <div className="flex justify-between p-2 border-t-2 text-sm">
+                      <div className="p-2 border-t-2 text-sm">
                         <button
-                          className="hover:bg-gray-300/20 px-2"
+                          className="hover:bg-gray-200/80 bg-gray-200 px-2 py-2 rounded float-right"
                           onClick={handleReset}
                         >
                           Đặt lại
-                        </button>
-                        <button className="bg-red-500 p-1.5 rounded text-white hover:bg-red-300">
-                          Áp dụng
                         </button>
                       </div>
                     </div>

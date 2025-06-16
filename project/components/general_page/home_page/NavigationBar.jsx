@@ -4,29 +4,48 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-
 import { debounce } from "lodash";
 import {
   BellIcon,
   HeartIcon,
   Bars4Icon,
   ChevronDownIcon,
+  ChartPieIcon,
+  ClipboardDocumentListIcon,
+  UsersIcon,
+  UserGroupIcon,
+  IdentificationIcon,
+  PencilIcon,
+  CurrencyDollarIcon,
+  ArrowRightStartOnRectangleIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 import LoginModal from "@/components/general_page/shared/LoginModal";
 import SideBar from "@/components/general_page/shared/SideBar";
 
 import useStore from "@/lib/zustand";
+import useLikeStore from "@/lib/likeStore";
 import { auth } from "@/lib/firebase";
 
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import Cookies from "js-cookie";
+import pathFunction from "../shared/pathFunction";
 
 const NavigationBar = () => {
   const router = useRouter();
+  const { likedPosts, setLike, toggleLike } = useLikeStore();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [currentUserUid, setCurrentUserUid] = useState("");
   const [loading, setLoading] = useState(true);
+
+  //* State for notification bell
+  const [isOpenNotifications, setIsOpenNotifications] = useState(false);
+
+  //* State for liked post
+  const [isOpenLikedPosts, setIsOpenLikedPosts] = useState(false);
 
   //* Modal state for login and signup
   const [openModal, setOpenModal] = useState("");
@@ -35,18 +54,45 @@ const NavigationBar = () => {
   //* Handle user options
   const [userOptions, setUserOptions] = useState(false);
   const options = [
-    { name: "Tổng quan", link: "/nguoi-dung" },
-    { name: "Quản lý tin đăng", link: "/nguoi-dung/quan-ly-tin-dang" },
-    { name: "Gói hội viên", link: "/nguoi-dung/goi-hoi-vien" },
-    { name: "Quản lý khách hàng", link: "/nguoi-dung/quan-ly-khach-hang" },
-    { name: "Quản lý tin tài trợ", link: "/nguoi-dung/quan-ly-tin-tai-tro" },
     {
-      name: "Thay đổi thông tin cá nhân",
-      link: "/nguoi-dung/thong-tin-ca-nhan",
+      name: "Tổng quan",
+      link: "/nguoi-dung",
+      icon: <ChartPieIcon className="w-5 h-5" />,
     },
-    { name: "Thay đổi mật khẩu", link: "/nguoi-dung/thay-doi-mat-khau" },
-    { name: "Nạp tiền", link: "/nguoi-dung/nap-tien" },
-    { name: "Đăng xuất" },
+    {
+      name: "Quản lý tin đăng",
+      link: "/nguoi-dung/quan-ly-tin-dang",
+      icon: <ClipboardDocumentListIcon className="w-5 h-5" />,
+    },
+    {
+      name: "Gói hội viên",
+      link: "/nguoi-dung/hoi-vien",
+      icon: <UsersIcon className="w-5 h-5" />,
+    },
+    {
+      name: "Tin nhắn",
+      link: "/nguoi-dung/tin-nhan",
+      icon: <UserGroupIcon className="w-5 h-5" />,
+    },
+    {
+      name: "Thông tin cá nhân",
+      link: "/nguoi-dung/thong-tin-tai-khoan",
+      icon: <IdentificationIcon className="w-5 h-5" />,
+    },
+    {
+      name: "Thay đổi mật khẩu",
+      link: "/nguoi-dung/thay-doi-mat-khau",
+      icon: <PencilIcon className="w-5 h-5" />,
+    },
+    {
+      name: "Nạp tiền",
+      link: "/nguoi-dung/nap-tien",
+      icon: <CurrencyDollarIcon className="w-5 h-5" />,
+    },
+    {
+      name: "Đăng xuất",
+      icon: <ArrowRightStartOnRectangleIcon className="w-5 h-5" />,
+    },
   ];
 
   //* Handle inactivity
@@ -65,6 +111,7 @@ const NavigationBar = () => {
       localStorage.removeItem("authToken");
       localStorage.removeItem("authExpiresAt");
       auth.signOut();
+      location.reload();
     } else {
       return;
     }
@@ -78,6 +125,21 @@ const NavigationBar = () => {
     });
 
     resetInactivityTimer();
+
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      const decoded = jwtDecode(token);
+      setCurrentUserUid(decoded.user_id);
+
+      axios
+        .get(`/api/getNotifications?receiver_id=${decoded.user_id}`)
+        .then((res) => {
+          setNotifications(res.data);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
 
     // Clean up event listeners when component is unmounted
     return () => {
@@ -201,9 +263,7 @@ const NavigationBar = () => {
         ],
       },
       { name: "Tin tức", link: "tin-tuc" },
-      { name: "Wiki BĐS", link: "wiki-bds" },
-      { name: "Phân tích đánh giá", link: "phan-tich-danh-gia" },
-      { name: "Danh bạ", link: "danh-ba" },
+      { name: "Danh bạ" },
     ],
     []
   );
@@ -240,11 +300,11 @@ const NavigationBar = () => {
 
   //* Check if login session is expired
   const checkAuthStatus = () => {
-    const expiresAt = localStorage.getItem("authExpiresAt");
+    const expiresAt = localStorage.getItem("expiresAt");
 
     if (!expiresAt || new Date().getTime() > expiresAt) {
       localStorage.removeItem("authToken");
-      localStorage.removeItem("authExpiresAt");
+      localStorage.removeItem("expiresAt");
       auth.signOut();
       setUsername(null);
       setProfileImage(null);
@@ -290,6 +350,21 @@ const NavigationBar = () => {
     };
   }, [handleScroll]);
 
+  useEffect(() => {
+    axios
+      .get(`/api/handle_posts/getLikedPost?user_id=${currentUserUid}`)
+      .then((res) => {
+        const likedPostIds = res.data;
+
+        likedPostIds.forEach((postId) => {
+          setLike(postId, true);
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, [currentUserUid, setLike]);
+
   //* Check path
   const pathName = usePathname();
 
@@ -305,7 +380,6 @@ const NavigationBar = () => {
 
   const handleLoginSuccess = () => {
     const redirectTo = localStorage.getItem("redirectAfterLogin") || "/";
-    localStorage.removeItem("redirectAfterLogin"); // Clean up
     router.push(redirectTo);
   };
 
@@ -334,10 +408,68 @@ const NavigationBar = () => {
     if (option === "Đăng xuất") {
       localStorage.removeItem("authToken");
       localStorage.removeItem("authExpiresAt");
+      localStorage.removeItem("redirectAfterLogin");
       auth.signOut();
       setUsername(null);
       setProfileImage(null);
       setUserOptions(false);
+    }
+  };
+
+  const timeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString.replace(" ", "T"));
+    const seconds = Math.floor((now - date) / 1000);
+
+    const intervals = {
+      năm: 31536000,
+      tháng: 2592000,
+      tuần: 604800,
+      ngày: 86400,
+      tiếng: 3600,
+      phút: 60,
+    };
+
+    for (const [unit, value] of Object.entries(intervals)) {
+      const amount = Math.floor(seconds / value);
+      if (amount >= 1) {
+        return `${amount} ${unit} trước`;
+      }
+    }
+
+    return "Vừa xong";
+  };
+
+  const handleReadNotifications = (notification_id) => {
+    axios
+      .post(`/api/handleReadNotification`, {
+        notification_id: notification_id,
+        receiver_id: currentUserUid,
+      })
+      .then(() => {
+        if (notification_id === "all") {
+          setIsOpenNotifications(false);
+          setNotifications([]);
+        } else {
+          setNotifications((prev) =>
+            prev.filter((item) => item.id !== notification_id)
+          );
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
+  const handleRemoveLikedItem = async (item) => {
+    try {
+      await axios.post("/api/handle_posts/handleLikePost", {
+        post_id: item.post_id,
+        user_id: currentUserUid,
+        like: false,
+      });
+    } catch (error) {
+      console.error("Failed to update like:", error);
     }
   };
 
@@ -364,7 +496,8 @@ const NavigationBar = () => {
                 className="ml-5 group relative"
                 onMouseEnter={() => setCurrentHoveringNav(item.name)}
                 onMouseLeave={() => setCurrentHoveringNav(null)}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setCurrentSelectedNav(item.name);
                   g_setProvince("");
                   g_setDistrict("");
@@ -386,7 +519,35 @@ const NavigationBar = () => {
                   }, 10);
                 }}
               >
-                <Link href={item.link}>{item.name}</Link>
+                {item.name === "Danh bạ" ? (
+                  <div className="relative cursor-pointer group">
+                    <p>{item.name}</p>
+                    <div
+                      className={`
+                     absolute w-72 border shadow rounded bg-white p-2
+                     flex flex-col transition-all duration-300 ease-in-out
+                     opacity-0 scale-95 translate-y-2 pointer-events-none
+                     group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 group-hover:pointer-events-auto
+                   `}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {[
+                        { name: "Nhà môi giới", href: "/nha-moi-gioi" },
+                        { name: "Doanh nghiệp", href: "/doanh-nghiep" },
+                      ].map((link, index) => (
+                        <Link
+                          href={link.href}
+                          key={index}
+                          className="py-2 px-2 rounded transition hover:bg-gray-100"
+                        >
+                          {link.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <Link href={item.link}>{item.name}</Link>
+                )}
                 <span
                   className={`block w-0 h-[2px] bg-orange-600 transition-all duration-300 ease-out ${
                     currentSelectedNav !== item.name
@@ -401,6 +562,7 @@ const NavigationBar = () => {
                         href={child.childLink}
                         key={index}
                         className="w-80 text-md bg-white m-1 p-1 font-normal hover:bg-slate-100 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {child.name}
                       </Link>
@@ -414,7 +576,15 @@ const NavigationBar = () => {
 
         <section className="flex items-center">
           <div className="flex space-x-4">
-            <button className="relative group">
+            <button
+              className={`relative group ${
+                username ? "block" : "hidden"
+              } relative`}
+              onClick={() => {
+                setIsOpenLikedPosts((prev) => !prev);
+                setIsOpenNotifications(false);
+              }}
+            >
               <HeartIcon className="w-6 h-6" />
               <span
                 className="absolute -bottom-0 left-1/2 
@@ -425,12 +595,155 @@ const NavigationBar = () => {
                 Danh sách tin đã lưu
                 <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-black"></span>
               </span>
+              {isOpenLikedPosts ? (
+                <div
+                  className="absolute h-96 w-96 bg-white -right-5 top-8 border shadow rounded text-left overflow-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between border-b shadow">
+                    <h1 className="p-2 pl-2 text-lg text-left">
+                      Danh sách tin đã lưu{" "}
+                      <span className="text-red-500">
+                        ({likedPosts.length})
+                      </span>
+                    </h1>
+                  </div>
+                  <div className="p-2">
+                    {likedPosts.map((item, index) => (
+                      <div
+                        className="relative flex items-center border rounded p-2 my-2 hover:bg-gray-100"
+                        key={index}
+                      >
+                        <Link
+                          href={`${
+                            item.type === "Bán"
+                              ? `/nha-dat-ban/${
+                                  item.post_id
+                                }-${pathFunction.convertToSlug(item.title)}`
+                              : `/nha-dat-cho-thue/${
+                                  item.post_id
+                                }-${pathFunction.convertToSlug(item.title)}`
+                          }`}
+                          className={` flex items-center text-left gap-2`}
+                          onClick={() => setIsOpenLikedPosts(false)}
+                        >
+                          <div>
+                            <div className="w-[70px] h-[50px] relative overflow-hidden rounded-md">
+                              <Image
+                                src={item.image}
+                                fill
+                                alt="post-thumb-nail"
+                                className="object-cover"
+                                sizes="180px"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex"></div>
+                          <div className="flex flex-col gap-2">
+                            <h1 className="text-left text-sm font-medium line-clamp-1">
+                              {item.title}
+                            </h1>
+                            <h1 className="flex items-center gap-2 text-xs text-gray-600">
+                              {timeAgo(item.post_start_date)}
+                            </h1>
+                          </div>
+                        </Link>
+                        <p
+                          onClick={() => {
+                            toggleLike(item);
+                            handleRemoveLikedItem(item);
+                          }}
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                likedPosts.length > 0 && (
+                  <span className="absolute top-3 -right-1 border rounded-full text-xs p-0.5 px-1 bg-red-500 text-white">
+                    {likedPosts.length}
+                  </span>
+                )
+              )}
             </button>
-            <button className={`${username ? "block" : "hidden"}`}>
+            <button
+              className={`${username ? "block" : "hidden"} relative`}
+              onClick={() => {
+                setIsOpenNotifications((prev) => !prev);
+                setIsOpenLikedPosts(false);
+              }}
+            >
               <BellIcon className="w-6 h-6" />
+              {isOpenNotifications ? (
+                <div
+                  className="absolute h-96 w-96 bg-white -right-5 top-8 border shadow rounded text-left "
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between border-b shadow">
+                    <h1 className="p-2 pl-2 text-lg text-left">
+                      Thông báo{" "}
+                      <span className="text-red-500">
+                        ({notifications.length})
+                      </span>
+                    </h1>
+                    <p
+                      className="float-end pr-3 text-xs hover:underline text-green-700 w-fit"
+                      onClick={() => {
+                        handleReadNotifications("all");
+                      }}
+                    >
+                      Đã đọc tất cả
+                    </p>
+                  </div>
+                  <div className="p-2 max-h-80 overflow-y-auto">
+                    {notifications
+                      .sort(
+                        (a, b) =>
+                          new Date(b.created_at) - new Date(a.created_at)
+                      )
+                      .map((item, index) => (
+                        <div
+                          key={index}
+                          className={`border rounded p-2 my-2 flex flex-col text-left gap-2 ${
+                            item.type === "Quan trọng"
+                              ? "bg-red-400"
+                              : item.type === "Thông báo"
+                              ? "bg-yellow-200"
+                              : "bg-white"
+                          }`}
+                        >
+                          <h1 className="flex items-center gap-2 text-xs text-gray-600">
+                            {timeAgo(item.created_at)}
+                          </h1>
+                          <h1 className="text-left text-sm font-medium">
+                            {item.content}
+                          </h1>
+                          <div className="w-full">
+                            <p
+                              className="float-end pr-3 text-xs hover:underline text-green-700 w-fit"
+                              onClick={() => {
+                                handleReadNotifications(item.id);
+                              }}
+                            >
+                              Đánh dấu là đã đọc
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ) : (
+                notifications.length > 0 && (
+                  <p className="absolute top-3 -right-1 border rounded-full text-xs p-0.5 px-1 bg-red-500 text-white">
+                    {notifications.length}
+                  </p>
+                )
+              )}
             </button>
           </div>
-          <div className="hidden xl:flex space-x-4 ml-4 text-sm font-medium items-center">
+          <div className="hidden xl:flex space-x-4 ml-4 text-sm font-medium">
             {!loading && username && (
               <div
                 className="flex items-center relative justify-center gap-3 cursor-pointer"
@@ -471,22 +784,24 @@ const NavigationBar = () => {
                         Tìm hiểu thêm
                       </button>
                     </div>
-                    <div className="mt-36 flex flex-col">
+                    <div className="mt-36 flex flex-col py-2">
                       {options.map((option, index) =>
                         option.link ? (
                           <Link
                             key={index}
-                            className="hover:bg-neutral-100 p-2 mb-2 rounded-lg cursor-pointer"
+                            className="hover:bg-neutral-100 p-2 rounded-lg cursor-pointer flex gap-3"
                             href={option.link}
                           >
+                            {option.icon}
                             {option.name}
                           </Link>
                         ) : (
                           <button
                             key={index}
-                            className="hover:bg-neutral-100 p-2 mb-2 rounded-lg cursor-pointer w-full text-left"
+                            className="hover:bg-neutral-100 p-2 rounded-lg cursor-pointer w-full text-left flex gap-3"
                             onClick={() => handleUserOptions(option.name)}
                           >
+                            {option.icon}
                             {option.name}
                           </button>
                         )

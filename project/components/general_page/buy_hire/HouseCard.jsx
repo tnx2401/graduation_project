@@ -1,22 +1,24 @@
-import Diamond from "./CardRank.jsx/Diamond";
-import Gold from "./CardRank.jsx/Gold";
-import Silver from "./CardRank.jsx/Silver";
-import Normal from "./CardRank.jsx/Normal";
+"use client";
+import dynamic from "next/dynamic";
 
-const HouseCard = ({ cardData, path }) => {
+const Diamond = dynamic(() => import("./CardRank/Diamond"), { ssr: false });
+const Gold = dynamic(() => import("./CardRank/Gold"), { ssr: false });
+const Silver = dynamic(() => import("./CardRank/Silver"), { ssr: false });
+const Normal = dynamic(() => import("./CardRank/Normal"), { ssr: false });
+
+const RANK_COMPONENTS = {
+  "VIP Kim Cương": Diamond,
+  "VIP Vàng": Gold,
+  "VIP Bạc": Silver,
+  "Tin thường": Normal,
+};
+
+const HouseCard = ({ cardData, path, hasUid }) => {
+  const RankComponent = RANK_COMPONENTS[cardData.rank_name];
   return (
     <div className="mt-5 w-full flex flex-col gap-5">
-      {cardData.rank_name === "VIP Kim Cương" && (
-        <Diamond cardData={cardData} path={path} />
-      )}
-      {cardData.rank_name === "VIP Vàng" && (
-        <Gold cardData={cardData} path={path} />
-      )}
-      {cardData.rank_name === "VIP Bạc" && (
-        <Silver cardData={cardData} path={path} />
-      )}
-      {cardData.rank_name === "Tin thường" && (
-        <Normal cardData={cardData} path={path} />
+      {RankComponent && (
+        <RankComponent cardData={cardData} path={path} hasUid={hasUid} />
       )}
     </div>
   );

@@ -37,7 +37,7 @@ export default async function handler(req, res) {
           contacts,
           balance,
           discount_balance,
-          member_type,
+          role_id,
           profile_picture,
           phone_number,
           email,
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
           const query = `
           INSERT INTO public.users (
             uid, username, phone_number, email, contacts, profile_picture,
-            member_type, balance, discount_balance, payment_code, tax_number
+            role_id, balance, discount_balance, payment_code, tax_number
           ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
           ) RETURNING *;
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
             email,
             contacts || "{}", // Default to an empty array if not provided
             profile_picture,
-            member_type || 1, // Default to 1 if not provided
+            role_id || 1, // Default to 1 if not provided
             balance || 0, // Default to 0 if not provided
             discount_balance || 0, // Default to 0 if not provided
             payment_code || null,
@@ -80,6 +80,7 @@ export default async function handler(req, res) {
         }
       } catch (error) {
         res.status(500).json({ message: "Error adding users to database" });
+        console.log(error);
       }
       break;
 

@@ -22,12 +22,13 @@ const PaymentInfo = ({ formData }) => {
       <div className="flex gap-5 mt-5 items-start">
         <div className="flex w-1/2">
           <div className="flex p-3 items-center gap-3 border border-gray-400 rounded-2xl w-full">
-            <div className="relative h-full w-1/3 aspect-square bg-black">
+            <div className="relative h-full w-1/3 aspect-square bg-black rounded-xl">
               <Image
                 src={formData.media.images[0]}
                 fill
                 objectFit="cover"
                 alt="image"
+                className="rounded-xl"
               />
 
               <span
@@ -83,7 +84,7 @@ const PaymentInfo = ({ formData }) => {
         <div className="w-1/2 flex-col flex gap-5 ">
           {[
             { name: "Loại tin", value: formData.payment.rank },
-            { name: "Đon giá", value: formData.payment.moneyperday },
+            { name: "Đơn giá", value: formData.payment.moneyperday.toLocaleString("de-DE") + " đ/ngày" },
             {
               name: "Số ngày đăng",
               value: formData.payment.duration + " ngày",
@@ -104,7 +105,7 @@ const PaymentInfo = ({ formData }) => {
 
           <div className="flex items-center justify-between">
             <p className="text-sm">Thanh toán</p>
-            <p className="font-semibold">{formData.payment.total}</p>
+            <p className="font-semibold">{formData.payment.total.toLocaleString("de-DE")} đ</p>
           </div>
         </div>
       </div>

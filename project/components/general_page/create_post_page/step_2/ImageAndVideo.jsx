@@ -200,8 +200,8 @@ const ImageAndVideo = ({ formData, setFormData, imageError }) => {
               <Image
                 src={item}
                 alt={`image-${index}`}
-                layout="fill" // Ensures the image fills the container
-                objectFit="cover" // Ensures images are evenly sized without distortion
+                layout="fill"
+                objectFit="cover"
                 className="rounded-xl"
               />
             </div>
@@ -287,14 +287,14 @@ const ImageAndVideo = ({ formData, setFormData, imageError }) => {
                     {images.map((item, index) => (
                       <div className="relative" key={index}>
                         {index === 0 && (
-                          <div className="absolute top-2 left-2 flex items-center bg-black p-1 rounded-xl">
+                          <div className="absolute top-2 left-2 flex items-center bg-black p-1 rounded-xl z-50">
                             <StarIcon className="w-5 h-5 text-black rounded-full bg-yellow-500" />
                             <p className=" text-white p-1 px-3 text-xs">
                               Ảnh bìa
                             </p>
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 flex items-center bg-black text-white p-1 rounded-xl">
+                        <div className="absolute top-2 right-2 flex items-center bg-black text-white p-1 rounded-xl z-50">
                           <TrashIcon
                             className="w-5 h-5"
                             onClick={() => handleDeleteImage(index)}

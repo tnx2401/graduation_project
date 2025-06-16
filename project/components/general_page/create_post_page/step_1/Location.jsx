@@ -3,7 +3,7 @@ import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
-import { add, debounce } from "lodash";
+import {debounce } from "lodash";
 import axios from "axios";
 
 import data from "@/public/local.json";
@@ -204,8 +204,8 @@ const Location = ({ formData, setFormData }) => {
       </div>
 
       {panel && (
-        <div className="absolute top-0 left-0 w-screen h-screen bg-black bg-opacity-50 z-10">
-          <div className="absolute flex flex-col top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white w-[768px] rounded-xl">
+        <div className="absolute top-0 left-0 w-full h-screen bg-black bg-opacity-0 z-50">
+          <div className="absolute flex flex-col top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border shadow-lg w-[768px] rounded-xl">
             <div className="flex justify-between items-center bg-black w-full rounded-tr-xl rounded-tl-xl">
               <h1 className=" text-white p-5  font-semibold text-xl">
                 Nhập địa chỉ
@@ -260,7 +260,7 @@ const Location = ({ formData, setFormData }) => {
       )}
 
       {typingPanel && (
-        <div className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 z-10">
+        <div className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 z-50">
           <div className="absolute flex flex-col top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/3 bg-white w-[768px] rounded-xl">
             <div className="flex justify-between items-center bg-black w-full rounded-tr-xl rounded-tl-xl">
               <h1 className=" text-white p-5  font-semibold text-xl">

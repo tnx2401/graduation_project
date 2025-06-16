@@ -1,9 +1,111 @@
+"use client";
 import { BellIcon, ChevronRightIcon, ListBulletIcon } from '@heroicons/react/24/outline'
 import { CurrencyDollarIcon, Squares2X2Icon, UserGroupIcon, UsersIcon } from '@heroicons/react/24/solid'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import useStore from '@/lib/zustand';
+import axios from 'axios';
+import Loading from './loading';
 
 const page = () => {
+  const { uid } = useStore();
+  const [userInfo, setUserInfo] = useState();
+  const [notifications, setNotifications] = useState([]);
+  const [notificationCategory, setNotificationCategory] = useState([
+    { name: "Quan trọng", items: [] },
+    { name: "Thông tin", items: [] }
+  ])
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    if (!uid) return;
+    axios.post(`/api/users/getGeneralInfo`, { uid })
+      .then((res) => {
+        console.log("API Response:", res.data);
+        setUserInfo(res.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.log("Error: ", error);
+      });
+
+    axios.get(`/api/getNotifications?receiver_id=${uid}`).then((res) => {
+      setNotifications(res.data);
+    }).catch((error) => {
+      console.log(error);
+    })
+  }, [uid]); // Depend only on uid
+
+  useEffect(() => {
+    const important = [];
+    const info = [];
+
+    notifications.forEach((item) => {
+      if (item.type === 'Thông báo' || item.type === 'Quan trọng') {
+        important.push(item);
+      } else {
+        info.push(item);
+      }
+    });
+
+    const sortByTime = (a, b) => new Date(b.created_at) - new Date(a.created_at);
+    important.sort(sortByTime);
+    info.sort(sortByTime);
+
+    setNotificationCategory([
+      { name: "Quan trọng", items: important },
+      { name: "Thông tin", items: info },
+    ]);
+  }, [notifications]);
+
+  const timeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString.replace(" ", "T"));
+    const seconds = Math.floor((now - date) / 1000);
+
+    const intervals = {
+      năm: 31536000,
+      tháng: 2592000,
+      tuần: 604800,
+      ngày: 86400,
+      tiếng: 3600,
+      phút: 60,
+    };
+
+    for (const [unit, value] of Object.entries(intervals)) {
+      const amount = Math.floor(seconds / value);
+      if (amount >= 1) {
+        return `${amount} ${unit} trước`;
+      }
+    }
+
+    return "Vừa xong";
+  };
+
+  const handleReadNotifications = (notification_id, receiver_id) => {
+    axios
+      .post(`/api/handleReadNotification`, {
+        notification_id: notification_id,
+        receiver_id: receiver_id,
+      })
+      .then(() => {
+        setNotificationCategory((prev) =>
+          prev.map((category) => ({
+            ...category,
+            items: category.items.filter((item) => item.id !== notification_id),
+          }))
+        );
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
+  if (loading) {
+    return <Loading />
+  }
+
   return (
     <>
       <div className='border-b border-gray-400 p-7 shadow-sm flex items-center justify-between'>
@@ -25,7 +127,7 @@ const page = () => {
               </div>
 
               <div className='flex-grow'>
-                <h1 className='text-2xl'>0 tin</h1>
+                <h1 className='text-2xl'>{userInfo[0]?.post_count} tin</h1>
                 <p className='text-sm text-gray-600'>Đang hiển thị</p>
               </div>
 
@@ -39,7 +141,7 @@ const page = () => {
               </div>
 
               <div>
-                <h1 className='text-2xl'>0 người</h1>
+                <h1 className='text-2xl'>{userInfo[0]?.contacts.length} người</h1>
                 <p className='text-sm mt-1 text-green-600'>+ 0 mới vào hôm nay</p>
               </div>
             </li>
@@ -52,11 +154,11 @@ const page = () => {
 
               <div className='flex gap-5 flex-grow'>
                 <div className='w-1/2 border-r border-gray-400'>
-                  <h1 className='text-2xl'>0 đ</h1>
+                  <h1 className='text-2xl'>{Number(userInfo[0]?.balance).toLocaleString("de-DE")} đ</h1>
                   <p className='text-sm mt-1'>Tài khoản chính</p>
                 </div>
                 <div className='w-1/2'>
-                  <h1 className='text-2xl'>0 đ</h1>
+                  <h1 className='text-2xl'>{Number(userInfo[0]?.discount_balance).toLocaleString("de-DE")} đ</h1>
                   <p className='text-sm mt-1'>Tài khoản khuyến mãi</p>
                 </div>
               </div>
@@ -83,25 +185,74 @@ const page = () => {
         </div>
 
         <div className='flex mt-5 gap-5'>
-          <div className='p-3 w-4/12 h-128 bg-gray-200  rounded-xl'>
+          <div className='p-3 w-4/12 h-128 bg-gray-200 rounded-xl flex flex-col'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2'>
                 <svg xmlns="http://www.w3.org/2000/svg" data-automation-id="svg-icon" width="30" height="30" fill="none" viewBox="0 0 24 24" className="svg-icon-wrapper styles_svg-container-override__5cUGx" da-id="svg-icon"><path fill="#FF0000" fillRule="evenodd" d="M11.381 2.73c.512-.728 1.528-.984 2.32-.445.962.655 2.645 1.935 4.094 3.733S20.5 10.185 20.5 13c0 4.866-3.759 9-8.5 9s-8.5-4.134-8.5-9c0-2.025.879-4.635 2.602-6.723.664-.804 1.818-.748 2.483-.087a.253.253 0 0 0 .383-.031l2.412-3.428zm.618 17.769c1.546 0 2.8-1.437 2.8-3.21 0-1.927-1.511-3.337-2.313-3.951a.79.79 0 0 0-.974 0c-.802.613-2.313 2.024-2.313 3.951 0 1.773 1.254 3.21 2.8 3.21"></path></svg>
                 <h1>Quan trọng</h1>
               </div>
-
-              <span className='p-1 px-2 text-xs bg-red-600 text-white rounded-full '>0</span>
+              <span className='p-1 px-2 text-xs bg-red-600 text-white rounded-full '>{notificationCategory[0].items.length}</span>
+            </div>
+            <div className='overflow-auto flex-1 px-2'>
+              {notificationCategory[0].items.map((item, index) => (
+                <div
+                  key={index}
+                  className={`border border-gray-200 rounded-lg shadow ${item.type === 'Thông báo' ? "bg-yellow-200" : "bg-red-500"} p-2 flex flex-col text-left gap-2 my-5`}
+                >
+                  <h1 className="flex items-center gap-2 text-xs text-gray-600">
+                    {timeAgo(item.created_at)}
+                  </h1>
+                  <h1 className="text-left text-sm font-medium">
+                    {item.content}
+                  </h1>
+                  <div className="w-full">
+                    <p
+                      className="float-end pr-3 text-xs hover:underline text-green-700 w-fit cursor-pointer"
+                      onClick={() => {
+                        handleReadNotifications(item.id, item.user_id);
+                      }}
+                    >
+                      Đánh dấu là đã đọc
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className='p-3 w-4/12 h-128 bg-gray-200  rounded-xl'>
+          <div className='p-3 w-4/12 h-128 bg-gray-200 rounded-xl flex flex-col'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2'>
                 <svg xmlns="http://www.w3.org/2000/svg" data-automation-id="svg-icon" width="30" height="30" fill="none" viewBox="0 0 24 24" className="svg-icon-wrapper styles_svg-container-override__5cUGx" da-id="svg-icon"><path fill="#0D1011" d="M7.5 8.5v3h4v-3z"></path><path fill="#0D1011" fillRule="evenodd" d="M2 5.75A2.75 2.75 0 0 1 4.75 3h9.5A2.75 2.75 0 0 1 17 5.75v5.5h2.25A2.75 2.75 0 0 1 22 14v3.75A3.25 3.25 0 0 1 18.75 21H5.25A3.25 3.25 0 0 1 2 17.75zM18.75 19.5a1.75 1.75 0 0 0 1.75-1.75V14c0-.69-.56-1.25-1.25-1.25H17v5c0 .966.784 1.75 1.75 1.75m-12-4.5a.75.75 0 0 0 0 1.5h5.5a.75.75 0 0 0 0-1.5zM6 7.75A.75.75 0 0 1 6.75 7h5.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-.75.75h-5.5a.75.75 0 0 1-.75-.75z" clipRule="evenodd"></path></svg>
                 <h1>Thông tin</h1>
               </div>
 
-              <span className='p-1 px-2 text-xs bg-red-600 text-white rounded-full '>0</span>
+              <span className='p-1 px-2 text-xs bg-red-600 text-white rounded-full '>{notificationCategory[1].items.length}</span>
+            </div>
+            <div className='flex-1 overflow-auto'>
+              {notificationCategory[1].items.map((item, index) => (
+                <div
+                  key={index}
+                  className="border my-5 shadow bg-gray-50 rounded-lg p-2 flex flex-col text-left gap-2"
+                >
+                  <h1 className="flex items-center gap-2 text-xs text-gray-600">
+                    {timeAgo(item.created_at)}
+                  </h1>
+                  <h1 className="text-left text-sm font-medium">
+                    {item.content}
+                  </h1>
+                  <div className="w-full">
+                    <p
+                      className="float-end pr-3 text-xs hover:underline text-green-700 w-fit cursor-pointer"
+                      onClick={() => {
+                        handleReadNotifications(item.id, item.user_id);
+                      }}
+                    >
+                      Đánh dấu là đã đọc
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

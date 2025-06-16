@@ -17,15 +17,15 @@ const useStore = create((set) => ({
   g_district: "",
   g_ward: "",
   g_street: "",
+  g_project: "",
 
   g_setProvince: (province) => {
-    console.log("Setting g_province to:", province);
     set(() => ({ g_province: province }))
   },
   g_setDistrict: (district) => set(() => ({ g_district: district })),
   g_setWard: (ward) => set(() => ({ g_ward: ward })),
   g_setStreet: (street) => set(() => ({ g_street: street })),
-
+  g_setProject: (project) => set(() => ({ g_project: project })),
 
   //Search Query
   g_searchQuery: {
@@ -43,6 +43,18 @@ const useStore = create((set) => ({
 
   g_houseType: [],
   g_setHouseType: (houseType) => set(() => ({ g_houseType: houseType })),
+
+
+  g_isChatting: false,
+  g_setIsChatting: (g_isChatting) => set(() => ({ g_isChatting })),
+
+  g_currentSender: "",
+  g_setCurrentSender: (g_currentSender) => set(() => ({ g_currentSender })),
+  g_currentReceiver: "",
+  g_setCurrentReceiver: (g_currentReceiver) => set(() => ({ g_currentReceiver })),
+  g_currentChat: "",
+  g_setCurrentChat: (g_currentChat) => set(() => ({ g_currentChat })),
+
 }));
 
 

@@ -40,7 +40,7 @@ const options = [
               "Nhà riêng",
               "Nhà biệt thự, liền kề",
               "Nhà mặt phố",
-              "Shop house, nhà phố thương mại",
+              "Shophouse, nhà phố thương mại",
             ],
           },
           {
@@ -117,7 +117,7 @@ const options = [
           { optionName: "Nhà biệt thự, liền kề", icon: <PiBuildingsLight /> },
           { optionName: "Nhà mặt phố", icon: <MdOutlineWarehouse /> },
           { optionName: "Nhà trọ, phòng trọ", icon: <TbBedFilled /> },
-          { optionName: "Shop house, nhà phố thương mại", icon: <CiShop /> },
+          { optionName: "Shophouse, nhà phố thương mại", icon: <CiShop /> },
           { optionName: "Văn phòng", icon: <PiOfficeChair /> },
           { optionName: "Cửa hàng, ki ốt", icon: <LiaStoreAltSolid /> },
           { optionName: "Kho, nhà xưởng, đất", icon: <TbBuildingWarehouse /> },

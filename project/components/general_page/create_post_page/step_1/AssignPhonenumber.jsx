@@ -59,7 +59,7 @@ const AssignPhonenumber = ({ userId, setHavePhonenumber }) => {
   };
 
   return (
-    <div className="absolute w-screen h-screen bg-black/50 top-0 left-0 flex items-center justify-center">
+    <div className="absolute w-screen h-screen bg-black/50 top-0 left-0 flex items-center justify-center z-[100]">
       {isVerify ? (
         <div className="w-1/4 bg-white rounded-xl ">
           <h1 className="p-5 w-full bg-black text-white font-semibold rounded-tl-xl rounded-tr-xl">
@@ -95,7 +95,7 @@ const AssignPhonenumber = ({ userId, setHavePhonenumber }) => {
           </h1>
           <p className="text-sm p-5">
             Bạn chưa thiết lập số điện thoại cho tài khoản này, nhập số điện
-            thoại bên dưới và xác nhận để tiếp tục đăng tin.
+            thoại bên dưới và xác nhận để tiếp tục.
           </p>
           <div className="px-5">
             <input

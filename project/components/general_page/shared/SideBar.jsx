@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ChevronRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 const SideBar = ({ setOpenSidebar, navItems, setOpenModal }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,7 +16,7 @@ const SideBar = ({ setOpenSidebar, navItems, setOpenModal }) => {
       onClick={() => setOpenSidebar(false)}
     >
       <div
-        className={`absolute top-0 left-0 transform transition-all duration-300 ease-out h-full flex flex-col items-start bg-white ${
+        className={`absolute top-0 left-0 pt-24 transform transition-all duration-300 ease-out h-full flex flex-col items-start bg-white ${
           isOpen ? "w-72" : "w-0"
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -26,9 +27,9 @@ const SideBar = ({ setOpenSidebar, navItems, setOpenModal }) => {
         >
           Đăng nhập
         </button>
-        <button className="p-3 border-2 w-10/12 m-5 rounded-md bg-red-600 text-white">
+        <Link href={"/nguoi-dung/dang-tin"} className="p-3 border-2 w-10/12 m-5 rounded-md bg-red-600 text-white text-center">
           Đăng tin
-        </button>
+        </Link>
 
         {navItems.map((item, index) => (
           <div

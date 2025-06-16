@@ -1,77 +1,72 @@
+"use client";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import axios from "axios";
 import dynamic from "next/dynamic";
-import React, { Suspense } from "react";
+import Link from "next/link";
+import React, { Suspense, useEffect, useState } from "react";
 
-const AdvertisingCard = dynamic(() => import("@/components/general_page/shared/AdvertisingCard"));
-
-const forYouData = [
-  {
-    title:
-      "Dộc quyền quỹ căn chủ nhà gửi bán giá rẻ nhất tại Vinhome Oceanpark 2",
-    price: 8.8,
-    area: 91,
-    location: "Văn Giang, Hưng Yên",
-    create_date: "Thời gian đăng",
-  },
-  {
-    title:
-      "Biệt thự song lập 2 mặt tiền, 170m2, sát TTTM Vincom, VIP nhất Vinhomes Ocean Park 2",
-    price: 14.3,
-    area: 84,
-    location: "Văn Giang, Hưng Yên",
-    create_date: "Thời gian đăng",
-  },
-  {
-    title: "Bán nhanh trước tết căn 65m2 Oceanpark",
-    price: 35,
-    area: 170,
-    location: "Văn Giang, Hưng Yên",
-    create_date: "Thời gian đăng",
-  },
-  {
-    title:
-      "GĐ Cần tiền bán góc Kinh Đô view công viên mua 2022 giá 50 tỷ giờ bán lại 37 tỷ. 170m2 đất VIP nhất",
-    price: 8.8,
-    area: 91,
-    location: "Văn Giang, Hưng Yên",
-    create_date: "Thời gian đăng",
-  },
-  {
-    title: "Bán gấp căn Sao Biển 55m2 hoàn thiện 5 tầng",
-    price: 8.8,
-    area: 91,
-    location: "Văn Giang, Hưng Yên",
-    create_date: "Thời gian đăng",
-  },
-];
+const AdvertisingCard = dynamic(() =>
+  import("@/components/general_page/shared/AdvertisingCard")
+);
 
 const ForYou = () => {
-  return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="text-2xl pt-5">Bất động sản dành cho bạn</h1>
+  //Get item from local storage with key "currentLocation"
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [forYouPosts, setForYouPosts] = useState([]);
 
-      <div className="grid grid-cols-4 gap-10">
+  useEffect(() => {
+    const storedLocation = localStorage.getItem("currentLocation");
+    setCurrentLocation(storedLocation);
+  }, []);
+
+  useEffect(() => {
+    axios
+      .post(`/api/handle_posts/getForYouPosts`, {
+        province: currentLocation,
+        demand: "Bán",
+      })
+      .then((res) => {
+        setForYouPosts(res.data);
+      })
+      .catch((err) => {
+        console.log("err", err);
+      });
+  }, [currentLocation]);
+
+  return (
+    <div className="max-w-7xl mx-auto pb-10">
+      <div className="flex items-center justify-between pt-10">
+        <h1 className="text-2xl">Bất động sản dành cho bạn</h1>
+        <div className="flex gap-5 items-center text-xs md:text-md">
+          <Link href={"/nha-dat-ban"}>Tới trang tin bán</Link>
+          <Link href={"/nha-dat-cho-thue"}>Tới trang tin cho thuê</Link>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-start gap-5 px-2 md:px-0 my-5">
         <Suspense fallback={<div>Loading...</div>}>
-          {forYouData.map((item, index) => (
+          {forYouPosts?.map((item, index) => (
             <AdvertisingCard
               key={index}
               title={item.title}
-              image={"https://placehold.co/399x200/png"}
+              image={item.images_url}
               price={item.price}
               area={item.area}
-              location={item.location}
-              created_date={item.create_date}
+              location={`${item.district}, ${item.province}`}
+              created_date={item.created_at}
             />
           ))}
         </Suspense>
       </div>
 
-      <button className="flex items-center border py-2 px-10 gap-2 mx-auto rounded bg-white border-neutral-500">
-        Mở rộng{" "}
-        <span>
-          <ChevronDownIcon className="w-4 h-4" />
-        </span>
-      </button>
+      {forYouPosts?.length > 8 && (
+        <button className="flex items-center border py-2 px-10 mt-10 gap-2 mx-auto rounded bg-white border-neutral-500">
+          Mở rộng{" "}
+          <span>
+            <ChevronDownIcon className="w-4 h-4" />
+          </span>
+        </button>
+      )}
     </div>
   );
 };

@@ -47,7 +47,8 @@ const MainInfo = ({
 
   const handleKeyPress = (event) => {
     const charCode = event.charCode;
-    if (charCode < 48 || charCode > 57) {
+    // Allow digits (48–57) and dot (46)
+    if ((charCode < 48 || charCode > 57) && charCode !== 46) {
       event.preventDefault();
     }
   };
@@ -118,7 +119,7 @@ const MainInfo = ({
       ...formData,
       main_info: {
         type: bdsType,
-        area: unit === "agreement" ? 0 : area,
+        area: unit === "agreement" ? area : area,
         price: unit === "agreement" ? 0 : rawPrice,
         unit: unit,
       },

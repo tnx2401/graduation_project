@@ -12,7 +12,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`${lexendMedium.className} antialiased bg-neutral-50`}>
         <SideBar />
-        <div className="ml-24">
+        <div className="ml-[90px]">
           {children}
         </div>
       </body>

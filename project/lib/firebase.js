@@ -1,22 +1,29 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAuth, connectAuthEmulator } from "firebase/auth"; // Correct method
+import { getFirestore } from "firebase/firestore";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyB0OdGWCTdeOLKyAStdoGiHk_ITD3ye0TI",
-  authDomain: "realestate-project-28361.firebaseapp.com",
-  projectId: "realestate-project-28361",
-  storageBucket: "realestate-project-28361.firebasestorage.app",
-  messagingSenderId: "556492141212",
-  appId: "1:556492141212:web:f9848311c39dfc92287359",
-  measurementId: "G-9QVDERBMRY",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-export const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Connect to the Firebase Authentication Emulator in development mode
+// if (process.env.NODE_ENV === 'development') {
+//   connectAuthEmulator(auth, "http://localhost:9099");
+// }
+
+export { auth, db };

@@ -93,7 +93,7 @@ const pathConfig = {
             },
         ],
     },
-    "/ban-nha-kho-nha-xuong": {
+    "/ban-kho-nha-xuong": {
         title: "Mua bán nhà kho, nhà xưởng",
         links: [
             {
