@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   const demand = searchQuery.demand === "Tìm thuê" ? "Cho thuê" : "Bán";
 
   let whereClauses = [];
-  let values = [today, demand, "Đã duyệt", userId];
+  let values = [today, demand, "Đã duyệt", userId, false];
 
   if (searchQuery.type && searchQuery.type.length > 0) {
     whereClauses.push(`type IN (${searchQuery.type.map((_, i) => `$${values.length + i + 1}`).join(", ")})`);
@@ -86,17 +86,17 @@ export default async function handler(req, res) {
 
   if (searchQuery.area) {
     if (searchQuery.area === 'Tất cả diện tích') {
-      whereClauses.push(`area::INTEGER > $${values.length + 1}`);
+      whereClauses.push(`area::FLOAT > $${values.length + 1}`);
       values.push(0);
     } else {
-      let areaRange = getNumberFromString(searchQuery.area)
+      let areaRange = getNumberFromString(searchQuery.area);
 
       if (areaRange.length > 1) {
-        whereClauses.push(`area::INTEGER >= $${values.length + 1} AND area::INTEGER <= $${values.length + 2}`)
-        values.push(Number(areaRange[0]), Number(areaRange[1]))
-      } else if (areaRange.length == 1) {
-        whereClauses.push(`area::INTEGER >= $${values.length + 1} ${Number(areaRange[0]) === 30 ? `AND area::INTEGER <= $${values.length + 2}` : ``}`)
-        values.push(Number(areaRange[0]) === 500 ? 500 : 0, areaRange[0])
+        whereClauses.push(`area::FLOAT >= $${values.length + 1} AND area::FLOAT <= $${values.length + 2}`);
+        values.push(Number(areaRange[0]), Number(areaRange[1]));
+      } else if (areaRange.length === 1) {
+        whereClauses.push(`area::FLOAT >= $${values.length + 1} ${Number(areaRange[0]) === 30 ? `AND area::FLOAT <= $${values.length + 2}` : ``}`);
+        values.push(Number(areaRange[0]) === 500 ? 500 : 0, areaRange[0]);
       }
     }
   }
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
       LEFT JOIN public.users ON posts.phone_number = users.phone_number
       LEFT JOIN public.post_ranks ON posts.rank_id = post_ranks.id
       LEFT JOIN public.user_post_views upv ON upv.post_id = posts.id AND upv.user_id = $4
-      WHERE invoices.post_end_date > $1 AND demand = $2 AND invoices.verify_status = $3
+      WHERE invoices.post_end_date > $1 AND demand = $2 AND invoices.verify_status = $3 AND invoices.is_sale = $5
       ${whereClauses.length ? `AND ${whereClauses.join(" AND ")}` : ""}
       GROUP BY posts.id, users.profile_picture, invoices.post_id, post_ranks.name, invoices.post_start_date, invoices.user_id, upv.user_id
       ORDER BY
@@ -161,6 +161,7 @@ export default async function handler(req, res) {
         invoices.post_start_date DESC;
     `;
 
+    console.log(values);
     const { rows } = await db.query(query, values);
     res.status(200).json(rows);
   } catch (error) {

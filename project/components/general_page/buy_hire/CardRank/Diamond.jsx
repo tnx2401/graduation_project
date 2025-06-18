@@ -10,10 +10,12 @@ import pathFunction from "../../shared/pathFunction";
 import useLikeStore from "@/lib/likeStore";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import LoginModal from "@/components/general_page/shared/LoginModal";
 
 const Diamond = React.memo(({ cardData, path, hasUid }) => {
   const [userId, setUserId] = useState();
   const { likedPosts, toggleLike, setLike } = useLikeStore();
+  const [openLoginModal, setOpenLoginModal] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -116,180 +118,198 @@ const Diamond = React.memo(({ cardData, path, hasUid }) => {
     [likedPosts, toggleLike, setLike]
   );
 
+  const handleLoginSuccess = () => {
+    window.location.reload();
+  };
+
   return (
-    <div className="bg-white h-128 border shadow-md cursor-pointer">
-      <Link href={`/${path}/${cardData.id}-${convertToSlug(cardData.title)}`}>
-        <div className="flex gap-1 h-3/5 w-full">
-          <div className="relative w-2/3">
-            <div
-              className="absolute inset-0 bg-cover blur-xs"
-              style={{ backgroundImage: `url(${cardData.images[0]})` }}
-            ></div>
-            <span className="absolute top-5 -left-2 text-sm text-white bg-red-500 p-1 rounded-tr-md rounded-br-md rounded-tl-lg z-40">
-              {cardData.rank_name}
-              <span className="absolute w-2 h-2 left-0 -bottom-2 rounded-bl-2xl bg-red-800"></span>
-            </span>
-            <Image
-              src={cardData.images[0]}
-              fill
-              style={{ objectFit: "cover" }}
-              alt="image"
-              priority
-            />
-          </div>
-          <div className="w-1/3 flex flex-col gap-1">
-            <div className="relative h-1/2 w-full">
+    <>
+      <div className="bg-white h-128 border shadow-md cursor-pointer">
+        <Link href={`/${path}/${cardData.id}-${convertToSlug(cardData.title)}`}>
+          <div className="flex gap-1 h-3/5 w-full">
+            <div className="relative w-2/3">
               <div
                 className="absolute inset-0 bg-cover blur-xs"
-                style={{ backgroundImage: `url(${cardData.images[1]})` }}
+                style={{ backgroundImage: `url(${cardData.images[0]})` }}
               ></div>
+              <span className="absolute top-5 -left-2 text-sm text-white bg-red-500 p-1 rounded-tr-md rounded-br-md rounded-tl-lg z-40">
+                {cardData.rank_name}
+                <span className="absolute w-2 h-2 left-0 -bottom-2 rounded-bl-2xl bg-red-800"></span>
+              </span>
               <Image
-                loading="lazy"
-                src={cardData.images[1]}
+                src={cardData.images[0]}
                 fill
-                style={{ objectFit: "contain", objectPosition: "center" }}
+                style={{ objectFit: "cover" }}
                 alt="image"
+                priority
               />
             </div>
-            <div className="h-1/2 w-full flex gap-1">
-              <div className="relative w-1/2">
+            <div className="w-1/3 flex flex-col gap-1">
+              <div className="relative h-1/2 w-full">
+                <div
+                  className="absolute inset-0 bg-cover blur-xs"
+                  style={{ backgroundImage: `url(${cardData.images[1]})` }}
+                ></div>
                 <Image
                   loading="lazy"
-                  src={cardData.images[2]}
+                  src={cardData.images[1]}
                   fill
-                  style={{ objectFit: "cover", objectPosition: "center" }}
+                  style={{ objectFit: "contain", objectPosition: "center" }}
                   alt="image"
                 />
               </div>
+              <div className="h-1/2 w-full flex gap-1">
+                <div className="relative w-1/2">
+                  <Image
+                    loading="lazy"
+                    src={cardData.images[2]}
+                    fill
+                    style={{ objectFit: "cover", objectPosition: "center" }}
+                    alt="image"
+                  />
+                </div>
 
-              <div className="relative w-1/2">
-                <Image
-                  loading="lazy"
-                  src={cardData.images[3]}
-                  fill
-                  style={{ objectFit: "cover", objectPosition: "center" }}
-                  alt="image"
-                />
-                <span className="absolute right-2 bottom-2 text-white bg-black/50 px-2 rounded-lg flex text-lg items-center gap-1 ">
-                  <PhotoIcon className="w-6 h-6" />
-                  {cardData.images.length}
-                </span>
+                <div className="relative w-1/2">
+                  <Image
+                    loading="lazy"
+                    src={cardData.images[3]}
+                    fill
+                    style={{ objectFit: "cover", objectPosition: "center" }}
+                    alt="image"
+                  />
+                  <span className="absolute right-2 bottom-2 text-white bg-black/50 px-2 rounded-lg flex text-lg items-center gap-1 ">
+                    <PhotoIcon className="w-6 h-6" />
+                    {cardData.images.length}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="h-1.5/5 bg w-full">
-          <div className=" h-full p-5 border-b-2 border-neutral-100">
-            <h1 className="uppercase line-clamp-1">{cardData.title}</h1>
-            <div className="mt-2 text-red-600 flex gap-2 items-center">
-              <p>
-                {Number(cardData.price) !== 0
-                  ? priceConverter(cardData.price)
-                  : "Thỏa thuận"}
-              </p>
-              <span className="w-0.5 h-0.5 bg-gray-300"></span>
-              <p>{cardData.area} m²</p>
-              {Number(cardData.price) !== 0 && (
-                <>
-                  <span className="w-0.5 h-0.5 bg-gray-300"></span>
-                  <p className="text-sm text-neutral-400">
-                    {priceOverSquare(cardData.price, cardData.area)}
-                  </p>
-                </>
-              )}
-              {cardData.bedroom > 0 && (
-                <>
-                  <span className="w-0.5 h-0.5 bg-gray-300"></span>
-                  <p className="text-neutral-400 flex items-center gap-2">
-                    {cardData.bedroom}
-                    <span>
-                      <LuBed />
-                    </span>
-                  </p>
-                </>
-              )}
+          <div className="h-1.5/5 bg w-full">
+            <div className=" h-full p-5 border-b-2 border-neutral-100">
+              <h1 className="uppercase line-clamp-1">{cardData.title}</h1>
+              <div className="mt-2 text-red-600 flex gap-2 items-center">
+                <p>
+                  {Number(cardData.price) !== 0
+                    ? priceConverter(cardData.price)
+                    : "Thỏa thuận"}
+                </p>
+                <span className="w-0.5 h-0.5 bg-gray-300"></span>
+                <p>{cardData.area} m²</p>
+                {Number(cardData.price) !== 0 && (
+                  <>
+                    <span className="w-0.5 h-0.5 bg-gray-300"></span>
+                    <p className="text-sm text-neutral-400">
+                      {priceOverSquare(cardData.price, cardData.area)}
+                    </p>
+                  </>
+                )}
+                {cardData.bedroom > 0 && (
+                  <>
+                    <span className="w-0.5 h-0.5 bg-gray-300"></span>
+                    <p className="text-neutral-400 flex items-center gap-2">
+                      {cardData.bedroom}
+                      <span>
+                        <LuBed />
+                      </span>
+                    </p>
+                  </>
+                )}
 
-              {cardData.bathroom > 0 && (
-                <>
-                  <span className="w-0.5 h-0.5 bg-gray-300"></span>
-                  <p className="text-neutral-400 flex items-center gap-2">
-                    {cardData.bathroom}
-                    <span>
-                      <PiBathtub />
-                    </span>
-                  </p>
-                </>
-              )}
-              <span className="w-0.5 h-0.5 bg-gray-300"></span>
-              <p className="text-sm text-neutral-400">
-                {cardData.ward}, {cardData.district}
+                {cardData.bathroom > 0 && (
+                  <>
+                    <span className="w-0.5 h-0.5 bg-gray-300"></span>
+                    <p className="text-neutral-400 flex items-center gap-2">
+                      {cardData.bathroom}
+                      <span>
+                        <PiBathtub />
+                      </span>
+                    </p>
+                  </>
+                )}
+                <span className="w-0.5 h-0.5 bg-gray-300"></span>
+                <p className="text-sm text-neutral-400">
+                  {cardData.ward}, {cardData.district}
+                </p>
+              </div>
+              <p className="mt-3 text-sm text-neutral-400 line-clamp-2 w-full">
+                {cardData.description}
               </p>
             </div>
-            <p className="mt-3 text-sm text-neutral-400 line-clamp-2 w-full">
-              {cardData.description}
-            </p>
-          </div>
-        </div>
-      </Link>
-
-      <div className="flex items-center justify-between mt-2">
-        <Link
-          href={`/nha-moi-gioi/${pathFunction.convertToSlug(
-            cardData.contact_name
-          )}-${cardData.user_id}`}
-          className="flex items-center justify-between pl-5 gap-3"
-        >
-          <Image
-            loading="lazy"
-            src={cardData.profile_picture}
-            width={35}
-            height={35}
-            className="rounded-full"
-            alt="profile_picture"
-          />
-          <div className="">
-            <h1 className="text-sm text-neutral-600">
-              {cardData.contact_name}
-            </h1>
-            <p className="text-xs text-neutral-400">
-              {handlePostDay(cardData.payment.created_at)}
-            </p>
           </div>
         </Link>
 
-        <div className="flex mr-5 gap-5">
-          <button className="flex items-center gap-2 bg-teal-500 text-white p-1 px-3 rounded-lg">
-            <span>
-              <MdOutlinePhoneInTalk />
-            </span>
-            {userId
-              ? cardData.phone_number
-              : cardData.phone_number.replace(/\d{3}$/, "***")}
-          </button>
-          {hasUid && (
+        <div className="flex items-center justify-between mt-2">
+          <Link
+            href={`/nha-moi-gioi/${pathFunction.convertToSlug(
+              cardData.contact_name
+            )}-${cardData.user_id}`}
+            className="flex items-center justify-between pl-5 gap-3"
+          >
+            <Image
+              loading="lazy"
+              src={cardData.profile_picture}
+              width={35}
+              height={35}
+              className="rounded-full"
+              alt="profile_picture"
+            />
+            <div className="">
+              <h1 className="text-sm text-neutral-600">
+                {cardData.contact_name}
+              </h1>
+              <p className="text-xs text-neutral-400">
+                {handlePostDay(cardData.payment.created_at)}
+              </p>
+            </div>
+          </Link>
+
+          <div className="flex mr-5 gap-5">
             <button
-              className=""
-              onClick={() =>
-                handleLikePost(
-                  cardData.id,
-                  userId,
-                  cardData.title,
-                  cardData.post_start_date,
-                  cardData.images[0]
-                )
-              }
+              className="flex items-center gap-2 bg-teal-500 text-white p-1 px-3 rounded-lg"
+              onClick={() => setOpenLoginModal("login")}
             >
-              <HeartIcon
-                className={`w-8 h-8 border border-gray-300 p-1 rounded ${
-                  isLiked ? "bg-red-400 text-white" : ""
-                }`}
-              />
+              <span className="flex items-center gap-3">
+                <MdOutlinePhoneInTalk />
+                {!userId && "Hiện số -"} 
+              </span>
+              {userId
+                ? cardData.phone_number
+                : cardData.phone_number.replace(/\d{3}$/, "***")}
             </button>
-          )}
+            {hasUid && (
+              <button
+                className=""
+                onClick={() =>
+                  handleLikePost(
+                    cardData.id,
+                    userId,
+                    cardData.title,
+                    cardData.post_start_date,
+                    cardData.images[0]
+                  )
+                }
+              >
+                <HeartIcon
+                  className={`w-8 h-8 border border-gray-300 p-1 rounded ${
+                    isLiked ? "bg-red-400 text-white" : ""
+                  }`}
+                />
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {openLoginModal && (
+        <LoginModal
+          openModal={openLoginModal}
+          setOpenModal={setOpenLoginModal}
+          handleLoginSuccess={handleLoginSuccess}
+        />
+      )}
+    </>
   );
 });
 

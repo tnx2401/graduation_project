@@ -318,8 +318,6 @@ const page = () => {
     return <Loading />
   }
 
-  console.log("Post invoices: ", invoices);
-
   return (
     <div className='flex flex-col min-h-screen'>
       <div className="flex items-center gap-5 p-5 py-8 bg-white border-b shadow">

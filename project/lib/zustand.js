@@ -27,6 +27,9 @@ const useStore = create((set) => ({
   g_setStreet: (street) => set(() => ({ g_street: street })),
   g_setProject: (project) => set(() => ({ g_project: project })),
 
+  g_type: [],
+  g_setType: (type) => set(() => ({ g_type: type })),
+
   //Search Query
   g_searchQuery: {
     demand: "Tìm mua",
@@ -40,10 +43,8 @@ const useStore = create((set) => ({
   },
   g_setSearchQuery: (newQuery) => set({ g_searchQuery: newQuery }),
 
-
   g_houseType: [],
   g_setHouseType: (houseType) => set(() => ({ g_houseType: houseType })),
-
 
   g_isChatting: false,
   g_setIsChatting: (g_isChatting) => set(() => ({ g_isChatting })),

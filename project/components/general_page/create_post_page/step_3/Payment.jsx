@@ -356,8 +356,8 @@ const Payment = ({ formData, setFormData }) => {
                         {getPostRankName(item.benefit_type)
                           .toLowerCase()
                           .includes("tin thường")
-                          ? "7 ngày"
-                          : "10 ngày"}
+                          ? "10 ngày"
+                          : "7 ngày"}
                       </span>
                     </p>
                   </div>

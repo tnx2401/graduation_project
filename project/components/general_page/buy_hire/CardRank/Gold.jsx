@@ -9,10 +9,12 @@ import { HeartIcon, PhotoIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import useLikeStore from "@/lib/likeStore";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import LoginModal from "@/components/general_page/shared/LoginModal";
 
 const Gold = React.memo(({ cardData, path, hasUid }) => {
   const [userId, setUserId] = useState();
   const { likedPosts, toggleLike, setLike } = useLikeStore();
+  const [openLoginModal, setOpenLoginModal] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -114,10 +116,18 @@ const Gold = React.memo(({ cardData, path, hasUid }) => {
     },
     [likedPosts, toggleLike, setLike]
   );
+
+  const handleLoginSuccess = () => {
+    window.location.reload();
+  };
+
   return (
-    <Link href={`/${path}/${cardData.id}-${convertToSlug(cardData.title)}`}>
-      <div className="bg-white h-72 border shadow-md cursor-pointer">
-        <div className="w-full h-5/6 flex border-b pb-1">
+    <div className="flex flex-col h-72 relative w-full border">
+      <Link
+        href={`/${path}/${cardData.id}-${convertToSlug(cardData.title)}`}
+        className="w-full h-5/6 flex border-b pb-1"
+      >
+        <div className="w-full flex pb-1">
           <div className="h-full w-2/5">
             <div className="relative w-full h-2/3">
               <div
@@ -225,61 +235,73 @@ const Gold = React.memo(({ cardData, path, hasUid }) => {
             </p>
           </div>
         </div>
+      </Link>
 
-        <div className="h-1/6 w-full">
-          <div className="flex items-center justify-between mt-2">
-            <div className="pl-5 flex gap-3 items-center">
-              <Image
-                loading="lazy"
-                src={cardData.profile_picture}
-                width={30}
-                height={30}
-                className="rounded-full"
-                alt="profile_picture"
-              />
-              <div className="">
-                <h1 className="text-xs font-semibold text-neutral-600">
-                  {cardData.contact_name}
-                </h1>
-                <p className="text-xs text-neutral-400">
-                  {handlePostDay(cardData.payment.created_at)}
-                </p>
-              </div>
+      <div className="h-1/6 w-full">
+        <div className="flex items-center justify-between mt-2">
+          <div className="pl-5 flex gap-3 items-center">
+            <Image
+              loading="lazy"
+              src={cardData.profile_picture}
+              width={30}
+              height={30}
+              className="rounded-full"
+              alt="profile_picture"
+            />
+            <div className="">
+              <h1 className="text-xs font-semibold text-neutral-600">
+                {cardData.contact_name}
+              </h1>
+              <p className="text-xs text-neutral-400">
+                {handlePostDay(cardData.payment.created_at)}
+              </p>
             </div>
-            <div className="flex mr-5 gap-5">
-              <button className="flex items-center gap-2 bg-teal-500 text-white p-1 px-3 rounded-lg">
-                <span>
-                  <MdOutlinePhoneInTalk />
-                </span>
-                {userId
-                  ? cardData.phone_number
-                  : cardData.phone_number.replace(/\d{3}$/, "***")}
+          </div>
+          <div className="flex mr-5 gap-5">
+            <button
+              className="flex items-center gap-2 bg-teal-500 text-white p-1 px-3 rounded-lg"
+              onClick={() => setOpenLoginModal("login")}
+            >
+              <span className="flex items-center gap-3">
+                <MdOutlinePhoneInTalk />
+                {!userId && "Hiện số -"}
+              </span>
+              {userId
+                ? cardData.phone_number
+                : cardData.phone_number.replace(/\d{3}$/, "***")}
+            </button>
+            {hasUid && (
+              <button
+                className=""
+                onClick={() =>
+                  handleLikePost(
+                    cardData.id,
+                    userId,
+                    cardData.title,
+                    cardData.post_start_date,
+                    cardData.images[0]
+                  )
+                }
+              >
+                <HeartIcon
+                  className={`w-8 h-8 border border-gray-300 p-1 rounded ${
+                    isLiked ? "bg-red-400 text-white" : ""
+                  }`}
+                />
               </button>
-              {hasUid && (
-                <button
-                  className=""
-                  onClick={() =>
-                    handleLikePost(
-                      cardData.id,
-                      userId,
-                      cardData.title,
-                      cardData.post_start_date,
-                      cardData.images[0]
-                    )
-                  }
-                >
-                  <HeartIcon
-                    className={`w-8 h-8 border border-gray-300 p-1 rounded ${
-                      isLiked ? "bg-red-400 text-white" : ""
-                    }`}
-                  />
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
-    </Link>
+
+      {openLoginModal && (
+        <LoginModal
+          openModal={openLoginModal}
+          setOpenModal={setOpenLoginModal}
+          handleLoginSuccess={handleLoginSuccess}
+        />
+      )}
+    </div>
   );
 });
 

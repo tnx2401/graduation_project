@@ -115,7 +115,7 @@ const Normal = React.memo(({ cardData, path, hasUid }) => {
   );
   return (
     <Link href={`/${path}/${cardData.id}-${convertToSlug(cardData.title)}`}>
-      <div className="bg-white h-48 border shadow-md cursor-pointer mb-10">
+      <div className="bg-white h-48 border shadow-md cursor-pointer">
         <div className="w-full h-full flex">
           <div className="h-full w-1/4">
             <div className="relative w-full h-full">
@@ -180,7 +180,7 @@ const Normal = React.memo(({ cardData, path, hasUid }) => {
 
             <div className="flex items-end justify-between">
               <p className="text-xs text-neutral-400">
-                {handlePostDay(cardData.created_at)}
+                {handlePostDay(cardData.post_start_date)}
               </p>
               {hasUid && (
                 <button

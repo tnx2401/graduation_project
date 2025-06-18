@@ -78,7 +78,7 @@ const page = () => {
             case "Không duyệt":
                 return post.verify_status === "Không duyệt";
             case "Đã hạ":
-                return post.verify_status === "Đã hạ";
+                return post.is_sale;
             default:
                 return true;
         }
@@ -270,6 +270,59 @@ const page = () => {
         })
     }
 
+    const handleToggleSaleStatus = async (post_id) => {
+        const selectedPost = postData.find(post => post.id === post_id);
+        if (!selectedPost) return;
+
+        if (selectedPost.is_sale) {
+            Swal.fire({
+                title: 'Không thể thay đổi',
+                text: 'Tin đã bán không thể chuyển lại thành đang rao bán.',
+                icon: 'warning',
+                confirmButtonText: 'Đã hiểu',
+            });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Xác nhận đã bán?',
+            text: 'Bạn chắc chắn muốn đánh dấu tin này là "Đã bán"?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Huỷ',
+            reverseButtons: true,
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            setPostData(prev =>
+                prev.map(post =>
+                    post.id === post_id ? { ...post, is_sale: true } : post
+                )
+            );
+
+            await axios.put(`/api/users/posts/updateSalePost?post_id=${post_id}`);
+        } catch (error) {
+            console.error(error);
+            Swal.fire({
+                title: 'Lỗi',
+                text: 'Không thể cập nhật trạng thái. Vui lòng thử lại.',
+                icon: 'error',
+                confirmButtonText: 'Đóng',
+            });
+
+            // Optional: Revert UI (though it's already not reversible in this logic)
+            setPostData(prev =>
+                prev.map(post =>
+                    post.id === post_id ? { ...post, is_sale: false } : post
+                )
+            );
+        }
+    };
+
+
     if (loading) {
         return <Loading />
     }
@@ -306,7 +359,6 @@ const page = () => {
 
             <div>
                 {categoryItem.map((item) => {
-
                     if (currentTab?.name === item.name) {
                         return (
                             <div key={item.name} className='w-3/4 mx-auto py-10'>
@@ -329,19 +381,50 @@ const page = () => {
                                                     <div className='mx-2 border-r w-8/12'>
                                                         <h1 className=''><span className={`${subItem.verify_status === "Đã duyệt" ? "bg-green-600" : subItem.verify_status === "Không duyệt" ? "bg-red-600" : "bg-yellow-500"} text-white p-1 px-2  rounded-md text-sm mr-2`}>{subItem.verify_status}</span>{subItem.title}</h1>
                                                         <p className='text-neutral-500 text-sm mt-2'>{subItem.demand} <span className='lowercase'>{subItem.type}</span> - {subItem.display_address}</p>
-                                                        <div className='flex items-center gap-10'>
+                                                        {(subItem.verify_status === "Đã duyệt" &&
+                                                            new Date(subItem.post_start_date) <= today &&
+                                                            new Date(subItem.post_end_date) >= today) && (
+                                                                <label className="flex items-center gap-2 cursor-pointer mt-3">
+                                                                    <span
+                                                                        className={`text-sm font-medium ${!subItem.is_sale ? "text-green-600" : "text-red-600"
+                                                                            }`}
+                                                                    >
+                                                                        {!subItem.is_sale ? "Đang rao bán" : "Đã bán"}
+                                                                    </span>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={subItem.is_sale}
+                                                                        onChange={() => handleToggleSaleStatus(subItem.id)}
+                                                                        className="sr-only"
+                                                                    />
+
+                                                                    <div
+                                                                        className={`w-10 h-5 rounded-full relative transition-colors duration-300
+                                                                        ${subItem.is_sale ? "bg-red-500" : "bg-green-500"}`}
+                                                                    >
+                                                                        <div
+                                                                            className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-0 scale-90
+                                                                            transition-all duration-300 ease-in-out
+                                                                            ${subItem.is_sale ? "left-5" : "left-0"}
+                                                                            `}
+                                                                        ></div>
+                                                                    </div>
+                                                                </label>
+                                                            )}
+                                                        <div className='flex items-center gap-10 flex-wrap'>
                                                             {[
                                                                 { name: "Mã tin", value: subItem.id },
                                                                 { name: "Ngày đăng", value: formatDate(subItem.post_start_date) },
                                                                 { name: "Ngày hết hạn", value: formatDate(subItem.post_end_date) },
                                                                 { name: "Lượt xem từ quảng cáo", value: subItem.advertisement_view_count, show: subItem.advertisement },
                                                                 { name: "Tổng chi phí cho quảng cáo", value: (Number(subItem.advertisement_view_count) * 1000).toLocaleString("de-DE"), show: subItem.advertisement },
+                                                                { name: "Lý do từ chối tin đăng", value: subItem.refund_reason, show: subItem.verify_status === "Không duyệt", isReason: true }
                                                             ]
-                                                                .filter(item => item.show === undefined || item.show) // Filters out unwanted items
+                                                                .filter(item => item.show === undefined || item.show)
                                                                 .map((item, index) => (
-                                                                    <div key={index} className="text-neutral-500 text-sm mt-4">
+                                                                    <div key={index} className={`text-sm mt-4 text-neutral-500`}>
                                                                         <h1>{item.name}</h1>
-                                                                        <p>{item.value}</p>
+                                                                        <p className={`${item.isReason ? "text-red-800" : "text-neutral-500"}`}>{item.value}</p>
                                                                     </div>
                                                                 ))}
                                                         </div>
@@ -357,16 +440,18 @@ const page = () => {
                                                             ))}
                                                         </div>
                                                         <div className='flex gap-3'>
-                                                            {new Date(subItem.post_end_date) > today && !subItem.advertisement && (
+                                                            {new Date(subItem.post_end_date) > today && !subItem.advertisement && subItem.verify_status !== "Không duyệt" && (
                                                                 <button className='p-1 border-blue-300 border rounded-lg text-blue-300 w-1/2 hover:scale-105' onClick={() => handleAdvertising(subItem.id)}>Quảng cáo</button>
                                                             )}
-                                                            {new Date(subItem.post_end_date) > today && subItem.advertisement && (
+                                                            {new Date(subItem.post_end_date) > today && subItem.advertisement && subItem.verify_status !== "Không duyệt" && (
                                                                 <button className='p-1 border-blue-300 border rounded-lg text-blue-300 w-2/3 hover:scale-105' onClick={() => handleRemoveAdvertising(subItem.id)}>Dừng quảng cáo</button>
                                                             )}
-                                                            <button onClick={() => handlePushPost(subItem.order, subItem.id, subItem.rank_name, subItem.verify_status, subItem.uid, subItem.balance, subItem.amount)}
-                                                                className={`p-1 border-blue-300 border rounded-lg text-blue-300 w-1/2 hover:scale-105 ${new Date(subItem.post_end_date) > today ? 'w-1/2' : 'w-full'}`}>
-                                                                {new Date(subItem.post_end_date) < today ? "Đăng lại" : "Đẩy tin"}
-                                                            </button>
+                                                            {subItem.verify_status !== "Không duyệt" && (
+                                                                <button onClick={() => handlePushPost(subItem.order, subItem.id, subItem.rank_name, subItem.verify_status, subItem.uid, subItem.balance, subItem.amount)}
+                                                                    className={`p-1 border-blue-300 border rounded-lg text-blue-300 w-1/2 hover:scale-105 ${new Date(subItem.post_end_date) > today ? 'w-1/2' : 'w-full'}`}>
+                                                                    {new Date(subItem.post_end_date) < today ? "Đăng lại" : "Đẩy tin"}
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

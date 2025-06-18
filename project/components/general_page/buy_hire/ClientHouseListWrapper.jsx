@@ -25,6 +25,7 @@ export default function ClientHouseListWrapper({ path }) {
       try {
         const rawQuery = Cookies.get("searchQuery");
         const searchQuery = rawQuery ? JSON.parse(rawQuery) : { demand };
+        console.log(searchQuery);
         const res = await fetch("/api/handle_posts/getPost", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

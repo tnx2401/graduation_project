@@ -32,6 +32,7 @@ import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import Cookies from "js-cookie";
 import pathFunction from "../shared/pathFunction";
+import { onAuthStateChanged } from "firebase/auth";
 
 const NavigationBar = () => {
   const router = useRouter();
@@ -300,19 +301,37 @@ const NavigationBar = () => {
 
   //* Check if login session is expired
   const checkAuthStatus = () => {
-    const expiresAt = localStorage.getItem("expiresAt");
+    const now = Date.now();
+    const authExpiresAt = Number(localStorage.getItem("authExpiresAt"));
 
-    if (!expiresAt || new Date().getTime() > expiresAt) {
+    const clearLocalSession = () => {
       localStorage.removeItem("authToken");
-      localStorage.removeItem("expiresAt");
-      auth.signOut();
+      localStorage.removeItem("authExpiresAt");
       setUsername(null);
       setProfileImage(null);
-    } else {
+    };
+
+    // Listen for Firebase session
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // Firebase says user is not logged in
+        clearLocalSession();
+        setLoading(false);
+        return;
+      }
+
       const token = localStorage.getItem("authToken");
-      if (token) {
+      if (!token || !authExpiresAt || now > authExpiresAt) {
+        // Session info missing or expired (UI-wise)
+        clearLocalSession(); // optional: preserve Firebase login if needed
+        setLoading(false);
+        return;
+      }
+
+      try {
         const decoded = jwtDecode(token);
         const userId = decoded.user_id;
+
         axios
           .get(`/api/users?userId=${userId}`, {
             headers: {
@@ -325,22 +344,23 @@ const NavigationBar = () => {
             setUsername(res.data.username);
             setProfileImage(res.data.profile_picture);
 
-            const expiresAt = new Date().getTime() + 24 * 60 * 60 * 1000;
-            localStorage.setItem("authExpiresAt", expiresAt);
+            // Refresh auth expiration
+            const newExpiresAt = now + 24 * 60 * 60 * 1000;
+            localStorage.setItem("authExpiresAt", newExpiresAt);
 
             setLoading(false);
           })
           .catch((error) => {
-            console.log("Error fetching user with ID: ", userId, error);
+            console.error("Error fetching user:", error);
+            clearLocalSession();
             setLoading(false);
           });
-      } else {
-        console.log("No token found");
+      } catch (err) {
+        console.error("Token decode error:", err);
+        clearLocalSession();
         setLoading(false);
       }
-    }
-
-    setLoading(false);
+    });
   };
 
   useEffect(() => {

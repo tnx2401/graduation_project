@@ -34,6 +34,7 @@ import { initializeChat } from "@/lib/chat";
 import { jwtDecode } from "jwt-decode";
 import AdvertisingCard from "@/components/general_page/shared/AdvertisingCard";
 import ReportBox from "@/components/general_page/buy_hire/ReportBox";
+import LoginModal from "@/components/general_page/shared/LoginModal";
 
 const DynamicMap = dynamic(() => import("@/components/general_page/shared/MapContainer"), {
   ssr: false,
@@ -79,6 +80,7 @@ const Page = ({ params }) => {
   const [projectInfo, setProjectInfo] = useState(null);
   const [similarPosts, setSimilarPosts] = useState([]);
   const [isOpenReportBox, setIsOpenReportBox] = useState(false);
+  const [openLoginModal, setOpenLoginModal] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -231,6 +233,10 @@ const Page = ({ params }) => {
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
   };
+
+  const handleLoginSuccess = () => {
+    window.location.reload();
+  }
 
   return (
     <div className="max-w-6xl mx-auto flex gap-5 pt-5">
@@ -527,8 +533,8 @@ const Page = ({ params }) => {
             className="rounded-full"
           />
           <h1 className="mt-3 font-semibold">{data.contact_name}</h1>
-          <button className="w-full bg-teal-600/80 py-3 font-normal text-sm text-white rounded-lg mt-5 flex items-center justify-center gap-2">
-            <span><PhoneIcon className="w-5 h-5" /></span> {uid
+          <button className="w-full bg-teal-600/80 py-3 font-normal text-sm text-white rounded-lg mt-5 flex items-center justify-center gap-2" onClick={() => setOpenLoginModal('login')}>
+            <span className="flex items-center gap-3"><PhoneIcon className="w-5 h-5" />{!uid && "Hiện số - "} </span> {uid
               ? data.phone_number
               : data.phone_number.replace(/\d{3}$/, '***')}
           </button>
@@ -546,7 +552,7 @@ const Page = ({ params }) => {
           )}
 
           {!uid && (
-            <p className="w-full border bg-gray-300 py-3 font-normal text-sm rounded-lg mt-5 cursor-not-allowed text-center">Đăng nhập để nhắn tin</p>
+            <p className="w-full border bg-gray-300 py-3 font-normal text-sm rounded-lg mt-5 cursor-pointer text-center" onClick={() => setOpenLoginModal('login')}>Đăng nhập để nhắn tin</p>
           )}
           <button className="w-full border border-gray-400 py-3 font-normal text-sm rounded-lg mt-5 flex items-center justify-center gap-2">
             <span><EnvelopeIcon className="w-5 h-5" /></span>Gửi Email
@@ -558,6 +564,13 @@ const Page = ({ params }) => {
       </div>
       {isOpenReportBox && (
         <ReportBox onClose={setIsOpenReportBox} postId={data.id} />
+      )}
+      {openLoginModal && (
+        <LoginModal
+          openModal={openLoginModal}
+          setOpenModal={setOpenLoginModal}
+          handleLoginSuccess={handleLoginSuccess}
+        />
       )}
     </div>
   );

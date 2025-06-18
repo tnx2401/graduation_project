@@ -1,5 +1,5 @@
 "use client";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import axios from "axios";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -10,9 +10,9 @@ const AdvertisingCard = dynamic(() =>
 );
 
 const ForYou = () => {
-  //Get item from local storage with key "currentLocation"
   const [currentLocation, setCurrentLocation] = useState(null);
   const [forYouPosts, setForYouPosts] = useState([]);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const storedLocation = localStorage.getItem("currentLocation");
@@ -20,6 +20,7 @@ const ForYou = () => {
   }, []);
 
   useEffect(() => {
+    if (!currentLocation) return;
     axios
       .post(`/api/handle_posts/getForYouPosts`, {
         province: currentLocation,
@@ -33,6 +34,8 @@ const ForYou = () => {
       });
   }, [currentLocation]);
 
+  const visiblePosts = expanded ? forYouPosts : forYouPosts.slice(0, 4);
+
   return (
     <div className="max-w-7xl mx-auto pb-10">
       <div className="flex items-center justify-between pt-10">
@@ -45,7 +48,7 @@ const ForYou = () => {
 
       <div className="flex flex-wrap justify-start gap-5 px-2 md:px-0 my-5">
         <Suspense fallback={<div>Loading...</div>}>
-          {forYouPosts?.map((item, index) => (
+          {visiblePosts.map((item, index) => (
             <AdvertisingCard
               key={index}
               title={item.title}
@@ -59,12 +62,17 @@ const ForYou = () => {
         </Suspense>
       </div>
 
-      {forYouPosts?.length > 8 && (
-        <button className="flex items-center border py-2 px-10 mt-10 gap-2 mx-auto rounded bg-white border-neutral-500">
-          Mở rộng{" "}
-          <span>
+      {forYouPosts.length > 4 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center border py-2 px-10 mt-10 gap-2 mx-auto rounded bg-white border-neutral-500"
+        >
+          {expanded ? "Thu gọn" : "Mở rộng"}
+          {expanded ? (
+            <ChevronUpIcon className="w-4 h-4" />
+          ) : (
             <ChevronDownIcon className="w-4 h-4" />
-          </span>
+          )}
         </button>
       )}
     </div>

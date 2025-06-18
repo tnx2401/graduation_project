@@ -170,15 +170,18 @@ const HouseSearchBox = () => {
           : path.includes("thue")
           ? "Tìm thuê"
           : prev.demand,
-        type: navItems
-          .flatMap((item) =>
-            item.child
-              ? item.child
-                  .filter((child) => path === child.childLink)
-                  .map((child) => child.name)
-              : []
-          )
-          .filter(Boolean),
+        type:
+          g_searchQuery.type.length > 0
+            ? g_searchQuery.type
+            : navItems
+                .flatMap((item) =>
+                  item.child
+                    ? item.child
+                        .filter((child) => path === child.childLink)
+                        .map((child) => child.name)
+                    : []
+                )
+                .filter(Boolean),
       };
 
       Cookies.set("searchQuery", JSON.stringify(updatedQuery), { expires: 1 });

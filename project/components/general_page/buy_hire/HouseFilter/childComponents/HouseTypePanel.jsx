@@ -4,7 +4,7 @@ import useStore from "@/lib/zustand";
 
 const HouseTypePanel = ({ searchQuery, setSearchQuery, setIsTypePanel }) => {
   const [checkedItems, setCheckedItems] = useState([]);
-  const { g_houseType } = useStore();
+  const { g_houseType, g_type, g_setType } = useStore();
 
   //* Xử lý trạng thái check của checkbox cha
   const handleParentChecked = (name, children = []) => {
@@ -48,9 +48,12 @@ const HouseTypePanel = ({ searchQuery, setSearchQuery, setIsTypePanel }) => {
         newType.push(key);
       }
     }
+    g_setType(newType);
     setSearchQuery({ ...searchQuery, type: newType });
     setIsTypePanel(false);
   };
+
+  console.log(checkedItems);
 
   return (
     <>

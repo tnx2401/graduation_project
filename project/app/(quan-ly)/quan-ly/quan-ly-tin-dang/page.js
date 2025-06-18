@@ -27,6 +27,7 @@ const page = () => {
   const [selectedPost, setSelectedPost] = useState([]);
   const [isOpenReport, setIsOpenReport] = useState(false);
   const [loading, setLoading] = useState(true);
+  const today = new Date();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -443,6 +444,44 @@ const page = () => {
     }
   };
 
+  const handleMarkAsSold = async (post_id) => {
+    const result = await Swal.fire({
+      title: 'Xác nhận đã bán?',
+      text: `Bạn chắc chắn muốn đánh dấu tin với mã ${post_id} này là "Đã bán"?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Huỷ',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await axios.put(`/api/users/posts/updateSalePost?post_id=${post_id}`);
+      setPostData((prev) =>
+        prev.map((post) =>
+          post.post_id === post_id ? { ...post, is_sale: true } : post
+        )
+      );
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Đã đánh dấu là đã bán!',
+        text: 'Tin đăng đã được cập nhật thành công.',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: 'Có lỗi xảy ra khi cập nhật trạng thái bán.',
+      });
+    }
+  }
+
 
   const itemsPerPage = 5;
   const [currentPage, setCurrentPage] = useState(1);
@@ -530,6 +569,11 @@ const page = () => {
                               <span className={`${subItem.verify_status === "Đã duyệt" ? "bg-green-600" : subItem.verify_status === "Không duyệt" ? "bg-red-600" : "bg-yellow-400"} text-white p-1 px-2  rounded-md text-sm mr-2`}>{subItem.verify_status}</span>
                               {subItem.title}
                               <span className="text-sm ml-2  text-green-400">{subItem.payment_status === 'Refunded' ? '(Đã hoàn tiền)' : ''}</span>
+                              {subItem.is_sale && (
+                                <span className="ml-2 inline-block px-2 py-0.5 text-sm text-white bg-red-400 rounded-full shadow-sm">
+                                  Bất động sản đã được bán
+                                </span>
+                              )}
                             </h1>
                             {currentTab?.name === "Chờ duyệt" && (
                               <input type="checkbox" id="checkbox" checked={selectedPost.some((item) => item.post_id === subItem.post_id)} className="appearance-none w-4 h-4 border rounded-sm border-gray-400 checked:bg-blue-600 checked:border-transparent focus:outline-none cursor-pointer" onChange={() => handleSelectPost(subItem.post_id, subItem.user_id)} />
@@ -572,7 +616,14 @@ const page = () => {
                                   <p className='absolute -top-2 -right-2 px-1 bg-red-500 text-white rounded-full'>{subItem.post_reports.length}</p>
                                 </div>
                               )}
-
+                              {!subItem.is_sale && subItem.verify_status === "Đã duyệt" && new Date(subItem.post_start_date) <= today && new Date(subItem.post_end_date) >= today && (
+                                <button
+                                  className="px-3 p-1 text-sm border border-green-600 text-green-600 rounded-lg hover:bg-green-600 hover:text-white hover:scale-105 transition-all"
+                                  onClick={() => handleMarkAsSold(subItem.post_id)}
+                                >
+                                  Đánh dấu là đã bán
+                                </button>
+                              )}
                               {subItem.refund_reason && (
                                 <p className='text-red-500 flex items-center gap-2'><ExclamationTriangleIcon className='w-6 h-6' />{subItem.refund_reason}</p>
                               )}

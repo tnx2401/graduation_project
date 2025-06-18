@@ -26,6 +26,7 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
     g_setSearchQuery,
     g_houseType,
     g_setHouseType,
+    g_type,
   } = useStore();
   const path = usePathname();
   const router = useRouter();
@@ -67,22 +68,21 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
   //* Áp dụng bộ lọc
   const handleApplyFilter = () => {
     console.log("Search query address: ", searchQuery.address);
-    let basePath = pathFunction.getBasePath(path);
-    const queryAddress = searchQuery.address[0];
-    const zustandAddress = storedAddress[0] ?? {};
-    const province = queryAddress.province || g_province;
 
-    if (searchQuery.type && searchQuery.type.length > 0) {
+    const updatedQuery = { ...searchQuery, type: g_type };
+    let basePath = pathFunction.getBasePath(path);
+    const queryAddress = updatedQuery.address[0];
+    const zustandAddress = storedAddress[0] ?? {};
+    const province = queryAddress?.province || g_province;
+
+    if (updatedQuery.type && updatedQuery.type.length > 0) {
       if (
-        searchQuery.type.find(
-          (type) => type === "Tất cả nhà đất" || type === "Các loại nhà bán"
-        )
+        updatedQuery.type.includes("Tất cả nhà đất") ||
+        updatedQuery.type.includes("Các loại nhà bán")
       ) {
         basePath = `/nha-dat-ban`;
-      } else {
-        if (searchQuery.demand === "Tìm mua") {
-          basePath = `/ban-${pathFunction.convertToSlug(searchQuery.type[0])}`;
-        }
+      } else if (updatedQuery.demand === "Tìm mua") {
+        basePath = `/ban-${pathFunction.convertToSlug(updatedQuery.type[0])}`;
       }
     }
 
@@ -102,8 +102,8 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
       basePath += `-${pathFunction.convertToSlug(province)}`;
     }
 
-    g_setSearchQuery(searchQuery);
-    Cookies.set("searchQuery", JSON.stringify(searchQuery), { expires: 1 });
+    g_setSearchQuery(updatedQuery);
+    Cookies.set("searchQuery", JSON.stringify(updatedQuery), { expires: 1 });
     router.push(basePath);
     setIsFiltering(false);
   };
@@ -189,7 +189,7 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
 
               <div className="p-5">
                 <h1>Loại bất động sản</h1>
-                <div className="flex flex-wrap gap-2 w-full items-center ">
+                <div className="flex flex-wrap w-full items-center ">
                   {searchQuery.type.length > 0 && (
                     <div className="mt-2">
                       {searchQuery.type.map((item, index) => {
@@ -202,7 +202,7 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
                           return matchingOption ? (
                             <span
                               key={index}
-                              className="text-sm p-2 bg-gray-200 rounded-md px-2"
+                              className="text-sm p-2 bg-gray-200 rounded-md px-2 mr-3"
                             >
                               {matchingOption.optionName}
                             </span>
@@ -384,11 +384,7 @@ const HouseFilter = ({ searchQuery, setSearchQuery, setIsFiltering }) => {
                   });
 
                   Cookies.remove("searchQuery");
-                  router.push(
-                    searchQuery.demand === "Tìm mua"
-                      ? "/nha-dat-ban"
-                      : "/nha-dat-cho-thue"
-                  );
+                  window.location.reload();
                   setIsFiltering(false);
                 }}
               >

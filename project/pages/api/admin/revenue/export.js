@@ -7,6 +7,8 @@ export default async function handler(req, res) {
 
     const { day, month, year, fromDate, toDate, data } = req.body;
 
+    console.log(data);
+
     let sheetTitle = "";
     if (fromDate && toDate) {
         const from = new Date(fromDate);

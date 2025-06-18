@@ -25,6 +25,8 @@ export default async function handler(req, res) {
             invoices.post_start_date,
             invoices.post_end_date,
             invoices.amount,
+            invoices.refund_reason,
+            invoices.is_sale,
             post_ranks.name as rank_name,
             COALESCE(
                     (

@@ -79,7 +79,7 @@ const Description = ({ formData, setFormData, titleError, contentError }) => {
   return (
     <div className="w-full border p-4 rounded-xl my-5 mb-24">
       <h1 className="font-semibold text-lg">Tiêu đề & Mô tả</h1>
-      <div className="flex items-center justify-between mt-7">
+      {/* <div className="flex items-center justify-between mt-7">
         <h1 className="font-semibold text-md">Tạo nhanh với AI</h1>
         <button
           className="flex p-2 px-5 border border-black rounded-3xl hover:bg-gray-300 transition-colors duration-200 ease-in-ou text-sm items-center font-semibold"
@@ -145,8 +145,8 @@ const Description = ({ formData, setFormData, titleError, contentError }) => {
           </svg>
           Tạo với AI
         </button>
-      </div>
-      <div className="mt-1">
+      </div> */}
+      <div className="mt-5">
         <label className="text-sm font-semibold" htmlFor="title">
           Tiêu đề
         </label>

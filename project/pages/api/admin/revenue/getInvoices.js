@@ -36,7 +36,7 @@ export default async function handler(req, res) {
         const totalMonthValues = [startDateStr, endDateStr, 'Paid'];
 
         const invoiceDayQuery = `
-                SELECT invoices.id, invoices.user_id, invoices.post_id, invoices.amount, invoices.created_at, posts.order
+                SELECT invoices.id, invoices.user_id, invoices.post_id, invoices.amount, invoices.created_at, posts.order, posts.contact_name
                 FROM invoices JOIN posts ON invoices.post_id = posts.id
                 WHERE invoices.created_at BETWEEN $1 AND $2 AND invoices.payment_status = $3
             `

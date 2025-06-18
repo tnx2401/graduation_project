@@ -85,7 +85,7 @@ const Page = () => {
           {!postData.length > 0 ? (
             <p className='text-center text-gray-500 my-10'>Chưa có tin đăng gần đây...</p>
           ) : (
-            <div className='mt-5'>
+            <div className='mt-5 flex flex-col gap-5'>
               {postData.map((item, index) => (
                 <Normal key={index} cardData={item} path={item.demand === 'Bán' ? 'nha-dat-ban' : 'nha-dat-cho-thue'} />
               ))}
