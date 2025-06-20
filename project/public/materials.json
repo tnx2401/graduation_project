@@ -1,0 +1,13 @@
+[
+  { "Id": 1, "Name": "Cát", "Unit": "m3", "Price": 300000.0 },
+  { "Id": 2, "Name": "Xi măng", "Unit": "kg", "Price": 1850.0 },
+  { "Id": 4, "Name": "Sắt", "Unit": "kg", "Price": 19000.0 },
+  { "Id": 5, "Name": "Đá", "Unit": "m3", "Price": 350000.0 },
+  { "Id": 6, "Name": "Gạch", "Unit": "viên", "Price": 900.0 },
+  { "Id": 7, "Name": "Gạch men", "Unit": "m2", "Price": 300000.0 },
+  { "Id": 8, "Name": "Ngói", "Unit": "viên", "Price": 6500.0 },
+  { "Id": 9, "Name": "Sơn trong nhà", "Unit": "kg", "Price": 25000.0 },
+  { "Id": 10, "Name": "Bột trét trong nhà", "Unit": "kg", "Price": 4000.0 },
+  { "Id": 11, "Name": "Sơn ngoài trời", "Unit": "kg", "Price": 36000.0 },
+  { "Id": 12, "Name": "Bột trét ngoài trời", "Unit": "kg", "Price": 5000.0 }
+]
